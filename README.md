@@ -13,8 +13,9 @@ published. The initial plan leads to beta, followed by dogfooding and external
 validation before considering stability.
 
 The first implementation checkpoint sets up strict TypeScript, package output,
-and a fresh Astro consumer with a synthetic validation harness. The Craft
-client and production loader are still to be implemented.
+and a fresh Astro consumer with a synthetic validation harness. An internal
+read-only Craft client is implemented and tested with synthetic HTTP responses.
+Body normalization and the production Astro loader are still to be implemented.
 
 ## Try the checkpoint
 
@@ -27,6 +28,8 @@ pnpm dev
 The tests verify schema-inferred types, rendering through `getCollection()` and
 `render()`, explicit schema defaults, and build failure for malformed synthetic
 data. No credentials are required. See [the example](examples/basic/README.md).
+Client tests also check request construction, response structure, duplicate IDs,
+and sanitized HTTP/network errors. These do not establish live client verification.
 
 ## Repository guide
 

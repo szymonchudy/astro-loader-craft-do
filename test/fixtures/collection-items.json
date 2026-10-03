@@ -1,0 +1,19 @@
+{
+  "items": [
+    {
+      "id": "synthetic-item-1",
+      "title": "Synthetic title",
+      "properties": {
+        "publishedat": "2026-10-01",
+        "tags": ["example"],
+        "custom_field": "A user-defined value",
+        "title": "A user-defined property named title"
+      }
+    },
+    {
+      "id": "synthetic-item-2",
+      "title": "",
+      "properties": {}
+    }
+  ]
+}

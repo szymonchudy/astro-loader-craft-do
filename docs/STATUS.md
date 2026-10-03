@@ -6,8 +6,8 @@ Updated: 2026-10-03
 
 Build the first working loader in a fresh Astro consumer app, using the pairing
 workflow in `AGENTS.md`. Discovery and the initial owner questions are complete.
-Do not restart them. The package scaffold and synthetic Astro consumer are now
-implemented; the Craft client and production loader are not implemented yet.
+Do not restart them. The package scaffold, synthetic Astro consumer, and internal
+read-only client are implemented. Normalization and the production loader remain.
 
 ## Read next
 
@@ -23,6 +23,8 @@ implemented; the Craft client and production loader are not implemented yet.
 - [Sample Collection guide](sample-collection.md): already prepared by the owner.
 - [Local development boundary](decisions/004-local-development-boundary.md):
   implemented scaffold and first consumer validation evidence.
+- [Read-only client boundary](decisions/005-read-only-client-boundary.md):
+  transport checks, error handling, synthetic evidence, and remaining uncertainty.
 
 `START_PROMPT.md` remains the full charter. Consult it for significant scope
 and release decisions, rather than replaying the completed "Start now" phase.
@@ -38,9 +40,9 @@ and release decisions, rather than replaying the completed "Start now" phase.
 - `gh` is authenticated as the intended owner. The repository lookup returned
   404 during setup. No remote repository, remote, npm account, or release was
   created in this work. Recheck external state before acting on it.
-- Work is in the local checkout with uncommitted/untracked setup files and
-  owner edits to `START_PROMPT.md`. Inspect Git status and preserve these.
-  A new local chat on this directory can use them without a push.
+- The setup and first consumer checkpoint, including owner charter edits, were
+  committed locally as `46fc950`. No push or publication occurred. Inspect Git
+  status before continuing and preserve subsequent owner edits.
 - Model recommendation for the next chat: GPT-6.1 Sol / Medium. The existing
   `.codex/config.toml` still defaults to Astra / High; select the intended
   model explicitly in the new chat. No configuration was changed for this.
@@ -69,14 +71,30 @@ Verified locally on Node 26.10.0, pnpm 12.8.1, Astro 7.3.5, TypeScript 6.0.3:
 
 Run `pnpm dev` to inspect the synthetic example. See
 `examples/basic/README.md` and `src/content.config.ts` inside that app.
-Pause here for the owner's learning checkpoint before the next slice.
+The owner reviewed this checkpoint and authorized continuing to the client slice.
+
+## Completed pairing checkpoint: read-only client
+
+`src/craft-client.ts` lists items and reads raw Markdown through two internal
+GET operations. It validates response structure and duplicate IDs, preserves
+user-defined properties and empty values, and reports sanitized failures.
+It does not import Astro, read environment variables, or add public exports.
+
+`pnpm test`: all 11 tests passed (10 client checks plus the existing Astro
+consumer check). `pnpm typecheck` and `git diff --check` passed. All response
+fixtures are synthetic; no live Craft requests or content mutations occurred.
+The suite verifies timeout-error handling, not a real timed cancellation.
+
+Pause here for owner inspection before normalization.
 
 ## Next implementation slice
 
-Implement a small read-only Craft client using the recorded REST evidence and
-synthetic fixtures. Validate response shapes and sanitized errors without
-introducing a large SDK or public options. Do not repeat live sample requests
-unless they answer a new unresolved question.
+Review the proposed nested entry mapping with the owner, then implement
+normalization using synthetic fixtures: preserve property keys, distinguish
+empty bodies from metadata wrappers, and remove structural indentation without
+breaking lists or code. Define unsupported-value behavior explicitly. Keep
+normalization independent of HTTP and Astro. Repeat live sample requests only
+when they answer an unresolved question or verify newly integrated behavior.
 
 Progress toward the milestone in small slices: read-only client, normalization,
 Astro loading/validation/rendering, then consumer verification. The milestone
