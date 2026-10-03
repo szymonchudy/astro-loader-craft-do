@@ -1,15 +1,24 @@
 You are acting as both:
 
-1. the lead maintainer of a new open-source TypeScript package integrating **Craft Docs** with the **Astro Content Layer**
+1. the lead maintainer of a new open-source TypeScript package integrating **Craft Docs / craft.do** with the **Astro Content Layer**
 2. my mentor for my first personally owned open-source project
+
+The project is called:
+
+**`astro-loader-craft-do`**
+
+The intended public locations are:
+
+- npm: `astro-loader-craft-do`
+- GitHub repository: `astro-loader-craft-do`
 
 The goal is not only to ship a production-quality OSS package.
 
-I want to understand how and why we build, package, publish, document, launch, promote, and maintain it.
+I want to understand how and why we build, package, publish, document, launch, promote, dogfood, and maintain it.
 
 Treat this as an educational OSS project where I remain the owner and maintainer rather than simply delegating all decisions to you.
 
-The project should become a real public package on GitHub and npm.
+I plan to use this loader myself as the content source for my own Astro blog. That real-world use should become an important validation environment for the library, but the library itself must remain generic and useful to unrelated developers.
 
 ---
 
@@ -42,6 +51,74 @@ Do not confuse **Craft Docs / craft.do** with **Craft CMS / craftcms.com**. They
 
 ---
 
+# Project lifecycle
+
+This repository begins as an **experimental, learning-in-public OSS project**.
+
+It is not initially claiming production stability.
+
+The intended lifecycle is:
+
+```text
+Experimental development
+        ↓
+Complete the initial project plan
+        ↓
+Initial beta
+        ↓
+Real-world dogfooding + external users
+        ↓
+API refinement
+        ↓
+Stable release
+```
+
+The README must clearly communicate the current maturity level.
+
+During the initial development phase, explain that:
+
+- this is my first personally owned OSS project
+- I am deliberately using it to learn professional OSS development
+- the implementation and public API are still evolving
+- I intend to use the package in my own Astro blog
+- the repository is public partly so the development and decision-making process can be followed
+- early feedback is welcome, but users should not assume API stability yet
+
+Once the initial plan described in this document has been completed, transition the project into an **initial beta**.
+
+Do not call it stable merely because the planned features exist.
+
+The beta should be used to validate:
+
+- real Craft spaces and Collections
+- my own production blog
+- unrelated users' projects
+- installation experience
+- API ergonomics
+- Astro compatibility
+- Craft API edge cases
+- documentation quality
+- maintenance burden
+
+Eventually recommend criteria for declaring the package stable.
+
+Stability should be earned through use rather than chosen arbitrarily.
+
+Possible factors include:
+
+- public API has stopped changing frequently
+- core behavior is well tested
+- known Craft content edge cases are documented or handled
+- my own blog has used it successfully
+- at least some external users have successfully adopted it
+- installation and upgrade paths are clear
+- supported Astro versions are explicit
+- major architectural uncertainties have been resolved
+
+Teach me how maintainers decide when an OSS library is actually ready for a stable release.
+
+---
+
 # Important secondary goal: teach me OSS
 
 This is my first open-source project that I personally own.
@@ -60,8 +137,10 @@ I specifically want to learn:
 - how an OSS library is scoped
 - how to design a stable public API
 - how npm packages actually work
+- how package names are claimed and owned on npm
 - package exports and TypeScript declarations
 - semantic versioning
+- prerelease versions such as alpha/beta
 - dependency choices
 - peer dependencies
 - Astro integrations and loaders
@@ -79,10 +158,12 @@ I specifically want to learn:
 - deprecation
 - security considerations
 - maintaining an OSS package over time
+- dogfooding a library safely
 - attracting users and contributors
 - building credibility around an OSS project
 - promoting a project without becoming spammy
 - interpreting stars, downloads, issues and adoption signals
+- deciding when software moves from experimental to beta to stable
 
 Whenever one of these topics naturally appears during the work, explain it in context rather than giving me an abstract OSS lecture upfront.
 
@@ -104,6 +185,7 @@ Do explain decisions that affect:
 - security
 - maintenance burden
 - OSS adoption
+- release maturity
 
 For important decisions, use a compact format such as:
 
@@ -137,19 +219,19 @@ However, pause for my input when a decision is genuinely worth understanding or 
 
 Examples:
 
-- package name
-- repository name
 - public API shape
 - license
+- GitHub ownership/account
 - minimum supported Astro version
 - compatibility policy
-- whether a feature belongs in v0.1
+- whether a feature belongs in the first beta
 - semantic versioning decisions
 - release strategy
 - branding and positioning
 - public README messaging
 - major architectural tradeoffs
 - accepting a breaking change
+- criteria for stable release
 - governance if contributors eventually appear
 
 For those decisions:
@@ -161,6 +243,12 @@ For those decisions:
 5. ask me to make the final decision when appropriate
 
 Do not stop for every minor implementation detail.
+
+The package name is already decided:
+
+**`astro-loader-craft-do`**
+
+Do not reopen package naming unless you discover a concrete blocking issue such as an npm naming conflict, trademark problem, or serious ecosystem ambiguity.
 
 ---
 
@@ -186,7 +274,65 @@ Each decision should explain:
 - alternatives
 - consequences
 
-This will also help me learn why the repository looks the way it does.
+This serves two purposes:
+
+1. helping future contributors understand the repository
+2. helping me learn why the repository looks the way it does
+
+---
+
+# Explain the repository itself
+
+Because this project is also an educational exercise, the README should explain the purpose of important project files rather than assuming every reader already knows the conventions.
+
+Keep this concise and useful.
+
+For example, explain the role of files/directories such as:
+
+```text
+START_PROMPT.md
+AGENTS.md
+docs/decisions/
+src/
+test/
+examples/
+.github/
+.codex/
+package.json
+tsconfig.json
+```
+
+Do not explain obvious files merely for the sake of completeness.
+
+Focus on files that illustrate how a professional OSS library is structured.
+
+The explanation should help someone else who is learning OSS understand the project without turning the README into a tutorial on Git.
+
+Also explain the development approach:
+
+```text
+research
+  ↓
+define product boundary
+  ↓
+design public API
+  ↓
+implement
+  ↓
+test against real Craft data
+  ↓
+package validation
+  ↓
+beta
+  ↓
+dogfood
+  ↓
+external feedback
+  ↓
+stabilize
+```
+
+The README should make it clear that this structure is intentional and part of the project's learning-in-public nature.
 
 ---
 
@@ -197,6 +343,8 @@ Before implementing anything:
 - inspect the repository
 - inspect existing package configuration
 - inspect current tooling
+- read this file fully
+- read `AGENTS.md`
 - research anything that can be determined independently
 
 Then ask me **one concise initial batch of questions**.
@@ -210,16 +358,20 @@ Do not ask questions whose answers can be obtained from:
 - Craft's API
 - installed tooling
 
-Likely questions include:
+Do NOT ask for the package name. It is:
 
-1. npm package name/scope
-2. GitHub account or organization
-3. license, with MIT as a likely default
-4. whether v0.1 should only support Collections
-5. whether simplicity or configurability should dominate the initial API
-6. whether real Craft credentials are available for read-only integration testing
-7. package manager preference
-8. whether I want my own name prominently associated with the package or prefer project-first branding
+**`astro-loader-craft-do`**
+
+Likely remaining questions include:
+
+1. GitHub personal account or organization
+2. license, with MIT as a likely default
+3. whether v0.1/beta should only support Collections
+4. whether simplicity or configurability should dominate the initial API
+5. whether real Craft credentials are available for read-only integration testing
+6. package manager preference
+7. whether I want my own name prominently associated with the package or prefer project-first branding
+8. any preference regarding beta/versioning strategy, if this cannot be sensibly recommended later
 
 For each question where you have a recommendation, tell me the recommended default and why.
 
@@ -309,7 +461,7 @@ Answer:
 - Does an equivalent package already exist?
 - What adjacent tools exist?
 - What does ours do differently?
-- Is the package name discoverable?
+- Is `astro-loader-craft-do` discoverable?
 - What language do users currently search for?
 - What existing pain points can our README directly address?
 
@@ -317,17 +469,54 @@ Do not abandon the project merely because adjacent solutions exist.
 
 Instead identify a crisp positioning statement.
 
-Example:
+Current working positioning:
 
-> Use Craft Docs Collections as typed Astro Content Collections.
+> Use Craft.do Collections as Astro Content Collections.
 
-Aim for a one-sentence explanation that a developer understands immediately.
+Possible supporting message:
 
-Record this positioning for later README and launch work.
+> Write and organize content in Craft. Build and render it with Astro.
+
+Improve these if research reveals clearer language.
 
 ---
 
-# Phase 3: define the boundary
+# Phase 3: secure the package identity
+
+I want to own **`astro-loader-craft-do`** in the npm registry.
+
+Early in the project:
+
+1. verify that `astro-loader-craft-do` is available on npm
+2. verify the corresponding GitHub repository name
+3. research the CURRENT npm mechanism for legitimately claiming/owning an unscoped package name
+4. explain the options to me
+
+Do not assume npm provides a separate "reserve name" mechanism.
+
+If claiming the name requires publishing a package:
+
+- explain that clearly
+- recommend the safest legitimate approach
+- do not publish junk or deceptive placeholder content
+- do not perform the publication without my explicit approval
+- ensure whatever is published accurately communicates the project's experimental state
+
+If an early npm release is appropriate primarily to establish package ownership, it must still be a legitimate package artifact with:
+
+- accurate metadata
+- valid license
+- README
+- no secrets
+- no misleading stability claims
+
+Explain the implications of publishing an early version.
+
+After ownership is established, configure the project so later releases can use a secure publishing workflow.
+
+---
+
+# Phase 4: define the boundary
 
 The project should primarily be:
 
@@ -352,7 +541,7 @@ Explain why saying "no" to features is important for OSS maintenance.
 
 ---
 
-# Phase 4: design the public API
+# Phase 5: design the public API
 
 Design the smallest useful API.
 
@@ -392,11 +581,11 @@ Before finalizing the API, explicitly teach me:
 - what semantic versioning would require if we later change them
 - why internal flexibility does not need to become public configuration
 
-Give me the proposed v0.1 API and let me review it before treating it as stable.
+Give me the proposed initial public API and let me review it before treating it as a beta compatibility commitment.
 
 ---
 
-# Phase 5: keep it generic
+# Phase 6: keep it generic
 
 Do not hard-code blog concepts such as:
 
@@ -417,9 +606,11 @@ Prefer Craft's stable item ID as the Astro entry ID unless implementation eviden
 
 Show blog-specific behavior only in examples.
 
+My blog will be a consumer of this library, not the architecture the library is built around.
+
 ---
 
-# Phase 6: content rendering
+# Phase 7: content rendering
 
 The developer experience should ideally support:
 
@@ -453,7 +644,7 @@ I want to understand what the loader is actually doing.
 
 ---
 
-# Phase 7: Craft normalization
+# Phase 8: Craft normalization
 
 Create an explicit boundary:
 
@@ -487,7 +678,7 @@ Do not silently generate broken links.
 
 Investigate what metadata is available.
 
-For v0.1 choose between:
+For the first beta choose between:
 
 - automatic resolution where reliable
 - configurable resolution
@@ -541,7 +732,7 @@ Determine whether URLs are:
 
 Never ship behavior that silently leaves users with expiring production images.
 
-If robust asset localization is too much for v0.1, expose an appropriate extension point and document the limitation.
+If robust asset localization is too much for the first beta, expose an appropriate extension point and document the limitation.
 
 Teach me the distinction between:
 
@@ -553,7 +744,7 @@ Teach me the distinction between:
 
 ---
 
-# Phase 8: caching and incremental behavior
+# Phase 9: caching and incremental behavior
 
 Use Astro Content Layer primitives properly.
 
@@ -578,7 +769,7 @@ Explain to me how build-time caching affects both:
 
 ---
 
-# Phase 9: TypeScript design
+# Phase 10: TypeScript design
 
 This should be a TypeScript-native package.
 
@@ -603,7 +794,7 @@ Teach me when appropriate about:
 
 ---
 
-# Phase 10: dependencies
+# Phase 11: dependencies
 
 Be conservative.
 
@@ -626,7 +817,7 @@ Make the dependency model explicit before publication.
 
 ---
 
-# Phase 11: errors and DX
+# Phase 12: errors and DX
 
 Provide errors that help developers fix problems.
 
@@ -650,7 +841,7 @@ Teach me how library error messages differ from application error messages.
 
 ---
 
-# Phase 12: package architecture
+# Phase 13: package architecture
 
 Prefer a small repository.
 
@@ -682,7 +873,7 @@ Explain package boundaries and why deep imports into internal source files are u
 
 ---
 
-# Phase 13: tests
+# Phase 14: tests
 
 A public library requires serious tests.
 
@@ -750,7 +941,27 @@ and explain why we chose the test pyramid we did.
 
 ---
 
-# Phase 14: example application
+# Phase 15: dogfooding
+
+I plan to use `astro-loader-craft-do` in my own Astro blog.
+
+Treat this as deliberate dogfooding.
+
+Once the loader reaches a state where real use is sensible:
+
+1. create or document a realistic example matching how my blog could consume it
+2. identify assumptions exposed by real Craft content
+3. track bugs and friction found during dogfooding
+4. distinguish blog-specific needs from generic loader needs
+5. avoid modifying the public API merely to suit my own site's architecture
+
+Teach me how maintainers use dogfooding without overfitting a library to themselves.
+
+Dogfooding should be an important requirement before recommending stable status.
+
+---
+
+# Phase 16: example application
 
 Build a tiny Astro example demonstrating:
 
@@ -782,61 +993,127 @@ The example should make someone think:
 
 ---
 
-# Phase 15: README as a product surface
+# Phase 17: README as both product surface and project journal
 
 Treat the README as one of the most important parts of the project.
 
-Someone arriving from GitHub should understand the project within approximately 30 seconds.
+Someone arriving from GitHub should understand the package within approximately 30 seconds.
 
-Above the fold, aim for:
+Use the real project name:
 
 ```text
 astro-loader-craft-do
 
-Use Craft Docs Collections as Astro Content Collections.
+Use Craft.do Collections as Astro Content Collections.
 
 [small working code example]
 ```
 
 Clearly state:
 
-> Craft Docs, not Craft CMS.
+> This package integrates with Craft Docs / craft.do, not Craft CMS.
+
+The README must also contain a visible **Project status** section.
+
+During the experimental stage, it should communicate something equivalent to:
+
+> `astro-loader-craft-do` is currently in early development. I started this project both because I want to use Craft as the content source for my own Astro blog and because I wanted to learn how to build, publish, and maintain a real open-source package from scratch.
+
+Explain that:
+
+- the API may still change
+- the repository is being developed in public
+- the project's plan is documented
+- when the initial plan is completed, the package will move into its first beta
+- beta will be used for dogfooding and external validation
+- a stable release will follow only after the API and behavior have proven themselves in real projects
+
+Do not make the project sound amateur or unreliable.
+
+The framing should be:
+
+**serious software being deliberately built in public while its maintainer learns the full OSS lifecycle.**
 
 README sections should approximately be:
 
 1. concise value proposition
-2. installation
-3. 60-second example
-4. Craft setup
-5. Astro setup
-6. rendering
-7. TypeScript/schema behavior
-8. transforms/filtering
-9. links
-10. images/assets
-11. security
-12. API reference
-13. limitations
-14. example project
-15. contributing
-16. compatibility
-17. license
+2. project status
+3. installation
+4. 60-second example
+5. Craft setup
+6. Astro setup
+7. rendering
+8. TypeScript/schema behavior
+9. transforms/filtering
+10. links
+11. images/assets
+12. security
+13. API reference
+14. limitations
+15. example project
+16. development approach
+17. repository structure
+18. contributing
+19. compatibility
+20. roadmap/maturity
+21. license
 
 Avoid filler.
 
-Teach me how README quality affects:
+---
 
-- adoption
-- GitHub stars
-- npm conversion
-- support burden
-- contributor quality
+# README: development approach
+
+Include a concise explanation of how this project is being developed.
+
+Explain artifacts such as:
+
+## `START_PROMPT.md`
+
+The original project charter.
+
+It captures:
+
+- goals
+- scope
+- technical requirements
+- mentoring objectives
+- release plan
+- OSS adoption goals
+
+Explain that it is intentionally preserved as part of the project's history.
+
+## `AGENTS.md`
+
+The concise working agreement used by coding agents while working in the repository.
+
+Explain why the large project charter and short persistent instructions are separated.
+
+## `docs/decisions/`
+
+A lightweight record of architectural and public API decisions.
+
+Explain that these exist to make future maintenance and contribution easier, not to create process for its own sake.
+
+## `.codex/`
+
+Project-local agent configuration where appropriate.
+
+Do not expose secrets or machine-specific configuration.
+
+## `examples/`
+
+Consumer-style applications proving that the published package works as an actual Astro dependency.
+
+Explain how examples differ from unit tests.
+
+This section should help another developer learn from the project structure just as I am learning from building it.
 
 ---
 
-# Phase 16: OSS repository quality
+# Phase 18: OSS repository quality
 
-Before public launch add appropriate project hygiene:
+Before beta/public launch add appropriate project hygiene:
 
 - LICENSE
 - README
@@ -865,7 +1142,7 @@ Explain which are worthwhile for a project of our current size.
 
 ---
 
-# Phase 17: contributor experience
+# Phase 19: contributor experience
 
 Design the repository so another developer can:
 
@@ -887,15 +1164,15 @@ Document:
 
 Avoid complex contributor tooling unless needed.
 
-Teach me what makes an OSS project "contributor friendly."
+Teach me what makes an OSS project contributor-friendly.
 
 ---
 
-# Phase 18: semantic versioning
+# Phase 20: versioning and maturity
 
-Before the first release, explain semantic versioning using this project itself.
+Before the first public package publication, explain semantic versioning and prerelease versioning using this project itself.
 
-Give examples such as:
+Examples:
 
 ```text
 Adding a backwards-compatible option:
@@ -904,19 +1181,39 @@ minor
 Fixing incorrect Markdown normalization:
 patch
 
-Renaming craftCollection() to craftDocsCollection():
+Renaming craftCollection() to something else:
 major
 ```
 
-Discuss whether `0.x` versions should be treated as unstable and what compatibility promise we want to communicate.
+Also explain:
 
-Recommend a practical policy for this project.
+- `0.x` semantics
+- prerelease identifiers such as `alpha` and `beta`
+- npm distribution tags such as `latest` and `beta`
+- what users reasonably infer from each
+- how npm package ownership interacts with early releases
 
-Do not use version numbers mechanically without explaining what they signal.
+Recommend a release progression for this project.
+
+Do not mechanically choose version numbers without explaining what they communicate.
+
+The project maturity progression should remain conceptually:
+
+```text
+early development
+      ↓
+initial beta
+      ↓
+validated beta releases
+      ↓
+stable
+```
+
+The exact version numbers and npm tags should follow current ecosystem conventions and be decided deliberately.
 
 ---
 
-# Phase 19: CI
+# Phase 21: CI
 
 Set up GitHub Actions for:
 
@@ -935,7 +1232,7 @@ Teach me how CI protects maintainers from breaking external consumers.
 
 ---
 
-# Phase 20: publishing
+# Phase 22: publishing
 
 Before publication validate the artifact itself.
 
@@ -958,8 +1255,8 @@ Verify:
 - license included
 - no secrets
 - no private fixtures
-- package name available
-- metadata correct
+- package name is correct
+- metadata is correct
 
 Install the tarball into a clean Astro application.
 
@@ -969,7 +1266,7 @@ Explain to me why `npm pack` testing catches problems normal tests often miss.
 
 ---
 
-# Phase 21: secure releases
+# Phase 23: secure releases
 
 Research current npm publishing recommendations.
 
@@ -992,9 +1289,11 @@ Automate the rest.
 
 ---
 
-# Phase 22: release readiness review
+# Phase 24: beta readiness review
 
-Before making the project public, produce:
+Completing the development plan does NOT automatically mean stable.
+
+Instead, when the planned first implementation is complete, produce a **beta readiness review**:
 
 ```text
 Implementation
@@ -1015,33 +1314,35 @@ Security
 OSS hygiene
 ✓ ...
 
-Launch
+Dogfooding readiness
 ✓ ...
 
-Remaining decisions
+Known limitations
 - ...
 
-Proposed version
-v0.1.0
+Remaining uncertainties
+- ...
+
+Proposed maturity
+Initial beta
 ```
 
-Then show me:
+Show me:
 
-- package name
-- repository name
-- package description
-- GitHub description
-- keywords
-- public API
-- compatibility policy
+- exact public API
+- package version recommendation
+- npm dist-tag recommendation
+- supported Astro versions
 - known limitations
-- release notes
+- compatibility promise during beta
+- first beta release notes
+- what evidence we need before stability
 
-Ask for my explicit approval before irreversible publishing actions.
+Ask for explicit approval before publishing the beta.
 
 ---
 
-# Phase 23: launch strategy
+# Phase 25: launch strategy
 
 This project should not merely be uploaded to npm and forgotten.
 
@@ -1055,6 +1356,7 @@ Our goals are:
 4. attract GitHub stars organically
 5. establish the project as the obvious Astro + Craft Docs integration
 6. help me learn how developers discover OSS
+7. collect evidence needed to eventually stabilize the package
 
 Do not optimize for vanity metrics at the expense of usefulness.
 
@@ -1064,9 +1366,9 @@ Do not optimize for vanity metrics at the expense of usefulness.
 
 Develop a crisp message.
 
-Potential direction:
+Current direction:
 
-> Use Craft Docs Collections as Astro Content Collections.
+> Use Craft.do Collections as Astro Content Collections.
 
 Supporting explanation:
 
@@ -1080,12 +1382,24 @@ Avoid suggesting Craft sponsors, endorses, or officially supports this package u
 
 # Naming and discoverability
 
-Research how developers actually search for this functionality.
+The package name is:
 
-Consider search terms such as:
+**`astro-loader-craft-do`**
+
+Optimize:
+
+- npm description
+- GitHub description
+- README headings
+- npm keywords
+- GitHub topics
+- documentation wording
+
+for searches related to:
 
 - Astro Craft
 - Craft Docs Astro
+- Craft.do Astro
 - Astro content loader
 - Craft Docs API
 - Craft headless CMS
@@ -1093,16 +1407,7 @@ Consider search terms such as:
 
 Avoid confusion with Craft CMS.
 
-Optimize:
-
-- npm package name
-- GitHub repository name
-- description
-- README headings
-- npm keywords
-- GitHub topics
-
-for genuine discoverability rather than keyword stuffing.
+Do not keyword-stuff.
 
 ---
 
@@ -1120,9 +1425,14 @@ One concise sentence.
 
 One concise sentence optimized for understanding and search.
 
-## release notes
+## beta release notes
 
-Explain what v0.1 enables.
+Explain:
+
+- what works
+- why the package exists
+- why it is still beta
+- what feedback is especially valuable
 
 ## short announcement
 
@@ -1137,7 +1447,9 @@ Explain:
 - how it works
 - a small code example
 - why Craft Docs + Astro is useful
-- current limitations
+- why I chose to develop it in public
+- what I learned
+- current beta limitations
 - link to the repository
 
 Keep the voice technical and personal rather than promotional/corporate.
@@ -1156,7 +1468,7 @@ Potential places may include:
 - relevant Reddit communities
 - Hacker News / Show HN
 - DEV Community
-- personal blog
+- my personal blog
 - LinkedIn
 - X / Bluesky or other developer networks
 - relevant Discord communities
@@ -1204,10 +1516,10 @@ Identify legitimate mechanisms that increase the likelihood of stars:
 - strong README
 - immediate code example
 - polished repository
-- screenshots/diagrams where helpful
-- clear use case
+- clear project status
 - easy setup
-- good issue responses
+- transparent roadmap
+- useful issue responses
 - useful release announcements
 - examples
 - integration directories
@@ -1215,6 +1527,7 @@ Identify legitimate mechanisms that increase the likelihood of stars:
 - consistent maintenance
 - SEO/discoverability
 - writing about the engineering behind it
+- documenting the learning process when genuinely useful
 
 Do not use:
 
@@ -1229,18 +1542,21 @@ Teach me what GitHub stars do and do not tell us.
 
 ---
 
-# Phase 24: content marketing through engineering
+# Phase 26: content marketing through engineering
 
 Use the project itself as material for technical writing.
 
 Identify 3-5 worthwhile article ideas.
 
-Examples:
+Likely themes include:
 
 - Building an Astro Content Loader from Scratch
 - Turning Craft Docs into a Headless Content Source
 - What I Learned Publishing My First OSS npm Package
+- Designing the Public API of My First OSS Library
 - Why Remote Content Belongs Behind a Normalization Layer
+- Dogfooding an Astro Integration on My Own Blog
+- Going From Experimental OSS Project to Beta
 - Testing an Astro Integration Against Multiple Framework Versions
 
 The goal is not generic SEO content.
@@ -1251,9 +1567,9 @@ Where relevant, naturally reference the project.
 
 ---
 
-# Phase 25: launch retrospective
+# Phase 27: launch retrospective
 
-One or two weeks after launch, help me evaluate:
+After the beta has had time to receive real use, help me evaluate:
 
 - GitHub stars
 - npm downloads
@@ -1266,6 +1582,7 @@ One or two weeks after launch, help me evaluate:
 - community responses
 - feature requests
 - installation problems
+- my own dogfooding experience
 
 Do not interpret numbers without context.
 
@@ -1278,11 +1595,11 @@ CI installs, mirrors and automated systems may contribute.
 
 Help distinguish signals from vanity metrics.
 
-Identify what we learned and what should enter v0.2.
+Identify what we learned and what belongs in subsequent beta releases.
 
 ---
 
-# Phase 26: first users
+# Phase 28: first users
 
 Treat early users as especially valuable.
 
@@ -1304,9 +1621,9 @@ Teach me how to separate:
 
 ---
 
-# Phase 27: maintenance workflow
+# Phase 29: maintenance workflow
 
-After launch establish a simple recurring workflow.
+After beta launch establish a simple recurring workflow.
 
 For example:
 
@@ -1331,6 +1648,7 @@ Changelog
 Teach me how to manage:
 
 - bugfix releases
+- beta releases
 - feature releases
 - breaking changes
 - deprecations
@@ -1343,7 +1661,43 @@ Keep maintenance proportional to actual project adoption.
 
 ---
 
-# Phase 28: ownership
+# Phase 30: stabilization
+
+Do not recommend stable status merely because time has passed.
+
+Periodically evaluate whether the project has enough evidence to stabilize.
+
+Prepare a stabilization review covering:
+
+```text
+Public API stability
+Tests
+Astro compatibility
+Craft API coverage
+Dogfooding results
+External adoption
+Known bugs
+Documentation
+Upgrade story
+Security
+Maintenance confidence
+```
+
+Explain which unresolved issues are:
+
+- blockers for stability
+- acceptable documented limitations
+- future enhancements
+
+If the evidence supports stability, recommend an appropriate stable version and migration policy.
+
+If it does not, explain what remains uncertain.
+
+The final decision to declare the project stable belongs to me.
+
+---
+
+# Phase 31: ownership
 
 This should remain recognizably my OSS project.
 
@@ -1357,6 +1711,7 @@ Help me understand enough that I can:
 - make API decisions
 - publish future releases
 - talk publicly about how the package works
+- explain why it is beta or stable
 
 When generating public-facing explanations of technical decisions, make sure I can defend them.
 
@@ -1364,7 +1719,7 @@ If you implement something I would probably struggle to explain, explicitly teac
 
 ---
 
-# Phase 29: progressive independence
+# Phase 32: progressive independence
 
 As the project matures, gradually encourage me to do some maintainer tasks myself.
 
@@ -1376,6 +1731,7 @@ Good candidates:
 - classifying an issue
 - deciding patch vs minor
 - reviewing an API proposal
+- deciding whether a beta has enough evidence to stabilize
 
 You can advise and check my work afterward.
 
@@ -1383,25 +1739,26 @@ The objective is that I eventually need less assistance to maintain this reposit
 
 ---
 
-# Phase 30: first release
+# Release execution
 
-Once I explicitly approve publication:
+Whenever I explicitly approve a public release:
 
 1. run final tests
 2. validate the packed artifact
 3. confirm git status
-4. create the release commit
-5. tag appropriately
-6. publish using the agreed secure mechanism
-7. verify npm
-8. install the published version into a clean Astro project
-9. run an actual build
-10. create the GitHub release
-11. verify public repository presentation
-12. prepare launch posts
-13. give me the recommended publication order
+4. confirm version and dist-tag
+5. create the release commit
+6. tag appropriately
+7. publish using the agreed secure mechanism
+8. verify npm
+9. install the published version into a clean Astro project
+10. run an actual Astro build
+11. create the GitHub release if appropriate
+12. verify public repository presentation
+13. prepare release/launch communication
+14. give me the recommended publication order
 
-Do not consider the release finished merely because `npm publish` succeeded.
+Do not consider a release finished merely because `npm publish` succeeded.
 
 ---
 
@@ -1411,7 +1768,7 @@ Throughout:
 
 - prefer boring, maintainable code
 - avoid unnecessary abstraction
-- keep v0.1 small
+- keep the initial beta focused
 - minimize public API surface
 - verify assumptions
 - use official APIs where possible
@@ -1423,8 +1780,9 @@ Throughout:
 - document limitations
 - postpone speculative features
 - avoid introducing maintenance obligations casually
+- prefer evidence from dogfooding and users over speculative configuration
 
-When something belongs in v0.2 rather than v0.1, say so.
+When something belongs in a later beta or post-stable version rather than the initial release, say so.
 
 ---
 
@@ -1441,6 +1799,8 @@ Throughout the work:
 - challenge questionable ideas rather than blindly implementing them
 - keep explanations connected to the actual project
 - don't overwhelm me with theory before it becomes relevant
+- explain how experimental, beta, and stable OSS differ in practice
+- help me gradually become capable of maintaining the project independently
 
 At meaningful milestones, give me a short:
 
@@ -1456,17 +1816,20 @@ Do this only when there is something substantive to learn.
 
 ---
 
-# Definition of done
+# Definition of technical success
 
-The technical project is done when an unrelated Astro developer can:
+An unrelated Astro developer should eventually be able to:
 
 ```bash
-npm install <package>
+npm install astro-loader-craft-do
 ```
 
 configure a Craft Docs API connection:
 
 ```ts
+import { defineCollection } from "astro:content";
+import { craftCollection } from "astro-loader-craft-do";
+
 const posts = defineCollection({
   loader: craftCollection({
     apiUrl: process.env.CRAFT_API_URL!,
@@ -1484,24 +1847,43 @@ const posts = await getCollection("posts");
 
 and render Craft content through Astro using documented APIs.
 
-They should be able to achieve this from the README without reading the source.
+They should be able to achieve this from the README without reading the package source.
 
-But the broader project is successful when:
+---
+
+# Definition of broader success
+
+The project is successful when:
 
 - the package solves a real problem
+- I use it successfully in my own Astro blog
 - I understand its architecture
 - I understand how it is packaged and released
 - I can explain its public API
 - I can maintain it
-- at least some developers outside my own projects use it
+- some developers outside my own projects use it
 - we have collected real feedback
 - the repository has earned visibility through usefulness
-- I have learned how to operate an OSS project rather than merely publish one
+- I understand how to operate an OSS project rather than merely publish one
+- the project has moved from experimental work to beta based on implementation readiness
+- it eventually reaches stability based on evidence from real use
 
-Start now by:
+GitHub stars are welcome evidence of interest, but they are not the definition of success.
 
-1. inspecting the repository/environment
-2. researching the current Astro, Craft Docs, npm and relevant ecosystem APIs
-3. assessing existing competing/adjacent projects
-4. explaining your initial understanding of the opportunity in no more than a few paragraphs
-5. asking me the initial batch of clarifying questions
+---
+
+# Start now
+
+Begin by:
+
+1. inspecting the repository and current Git state
+2. reading `START_PROMPT.md` and `AGENTS.md`
+3. inspecting current project-local Codex configuration if present
+4. researching the current Astro, Craft Docs, npm and relevant ecosystem APIs
+5. verifying availability and current ownership status of `astro-loader-craft-do` on npm and GitHub
+6. assessing existing competing/adjacent projects
+7. explaining your initial understanding of the opportunity in no more than a few paragraphs
+8. explaining the current options for securing the npm package name
+9. asking me the initial concise batch of clarifying questions
+
+Do not implement the library before completing these initial steps.

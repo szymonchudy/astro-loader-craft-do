@@ -1,0 +1,18 @@
+# model = "gpt-6-astra"
+# model_reasoning_effort = "high"
+plan_mode_reasoning_effort = "high"
+
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+
+# This project explicitly requires checking current Astro,
+# Craft, npm and GitHub documentation.
+web_search = "live"
+
+[sandbox_workspace_write]
+network_access = true
+
+[agents]
+max_concurrent_threads_per_session = 4
+default_subagent_model = "gpt-6.1-sol"
+default_subagent_reasoning_effort = "medium"

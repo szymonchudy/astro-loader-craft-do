@@ -1,0 +1,24 @@
+---
+import { getCollection, render } from 'astro:content';
+
+const articles = await getCollection('articles');
+const renderedArticles = await Promise.all(
+  articles.map(async (article) => ({ article, ...(await render(article)) })),
+);
+---
+<!doctype html>
+<html lang="en">
+  <head><meta charset="utf-8" /><title>Craft loader validation checkpoint</title></head>
+  <body>
+    <h1>Craft loader validation checkpoint</h1>
+    <p>This first slice uses synthetic data. The Craft client comes next.</p>
+    {renderedArticles.map(({ article, Content }) => (
+      <article>
+        <h2>{article.data.title}</h2>
+        <p>Status: {article.data.properties.status}</p>
+        <p>Tags: {article.data.properties.tags.length}</p>
+        <Content />
+      </article>
+    ))}
+  </body>
+</html>

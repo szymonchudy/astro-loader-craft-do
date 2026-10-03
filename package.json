@@ -1,0 +1,26 @@
+{
+  "name": "astro-loader-craft-do",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Use Craft.do Collections as Astro Content Collections (experimental development).",
+  "license": "MIT",
+  "type": "module",
+  "packageManager": "pnpm@12.8.1",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "pnpm build && node --test test/consumer.test.mjs",
+    "dev": "pnpm --dir examples/basic dev"
+  },
+  "devDependencies": {
+    "astro": "7.3.5",
+    "typescript": "6.0.3"
+  }
+}
