@@ -1,0 +1,14 @@
+---
+import { getCollection, render } from 'astro:content';
+const articles = await getCollection('articles');
+const rendered = await Promise.all(articles.map(async article => ({ article, ...(await render(article)) })));
+---
+<html lang="en"><head><meta charset="utf-8" /><title>Package consumer</title></head><body>
+<p>Entries: {articles.length}</p>
+{rendered.map(({ article, Content }) => <article>
+  <h1>{article.data.title}</h1>
+  <p>Status: {article.data.properties.status}</p>
+  <p>Tags: {article.data.properties.tags.length}</p>
+  <Content />
+</article>)}
+</body></html>

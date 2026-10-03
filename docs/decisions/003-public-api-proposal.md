@@ -3,8 +3,8 @@
 Date: 2026-10-03
 
 Status: User-authored Zod validation and build failure are confirmed requirements.
-The nested data layout remains a proposal; nothing here is implemented or a
-beta compatibility promise yet.
+The nested data layout is now implemented experimentally in the working-loader
+checkpoint. It remains a proposal for beta compatibility, pending owner review.
 
 ## Context
 
@@ -139,7 +139,10 @@ fields. Unsupported types must be handled or documented explicitly.
 
 See [the sample observations](../research/sample-observations.md) for the
 documented distinction between connector output and directly observed REST
-responses. Rendering and fresh Astro builds remain pending.
+responses. Rendering, fresh tarball builds, schema defaults, exact inferred
+types, and invalid-data failures now pass the
+[package matrix](../research/package-validation.md). This verifies the proposed
+experience without promoting the data layout to a beta compatibility promise.
 
 - [Astro parseData contract](https://docs.astro.build/en/reference/content-loader-reference/#loadercontextparsedata)
 - [Astro collection schemas and type inference](https://docs.astro.build/en/guides/content-collections/#defining-the-collection-schema)

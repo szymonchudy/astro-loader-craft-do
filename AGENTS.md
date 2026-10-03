@@ -31,11 +31,15 @@ Work in small, complete slices within one active milestone.
   decisions and evidence; do not repeat the initial interview or research
   already recorded unless new evidence requires it.
 - Before a meaningful slice, briefly explain its purpose, the relevant OSS or
-  package concept, and how success will be checked. Then handle routine work
-  autonomously. Ask for input on consequential choices, not every edit.
+  package concept, and how success will be checked. Break the slice into small
+  steps internally, but carry a coherent working milestone through implementation
+  and verification autonomously. Keep the owner informed without pausing for
+  each conversion or routine edit. Ask for input only when it is needed for a
+  consequential choice or a genuine blocker.
 - At each learning checkpoint, show the working result or focused diff,
   summarize validation, explain one or two concepts using the actual files,
-  and give the owner an opportunity to inspect or try it before the next slice.
+  and give the owner an opportunity to inspect or try the completed milestone.
+  Reserve mentoring checkpoints for impactful concepts, not every small step.
   Do not complete an entire multi-stage release plan unattended.
 - When proposing an API, show the complete consumer experience, including its
   user-authored Zod schema, inferred types, and validation failure behavior.

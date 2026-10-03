@@ -1,7 +1,7 @@
 # Sample Craft Collection
 
 This is a preparation guide for read-only API validation and the first fresh
-Astro example. The loader is not implemented yet. These are example application
+Astro example. The experimental loader now renders this sample. These are example application
 fields, not required fields imposed by the library.
 
 ## Create the document and Collection

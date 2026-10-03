@@ -12,6 +12,9 @@ type Article = CollectionEntry<'articles'>;
 
 // These fail if schema inference regresses to any or loses its precise output.
 export type InferenceChecks = [
+  Assert<Equal<Parameters<NonNullable<packageBoundary.CraftRenderers['callout']>>[0]['markdown'], string>>,
+  Assert<Equal<Parameters<NonNullable<packageBoundary.CraftRenderers['toggle']>>[0]['summary'], string>>,
+  Assert<Equal<Parameters<NonNullable<packageBoundary.CraftRenderers['highlight']>>[0]['color'], string | undefined>>,
   Assert<Equal<Article['data']['title'], string>>,
   Assert<Equal<Article['data']['properties']['status'], 'draft' | 'published'>>,
   Assert<Equal<Article['data']['properties']['tags'], string[]>>,

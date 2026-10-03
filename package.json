@@ -15,9 +15,16 @@
   "files": ["dist"],
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "prepack": "pnpm build",
+    "test:package": "node scripts/verify-package.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "pnpm build && node --test test/*.test.mjs",
-    "dev": "pnpm --dir examples/basic dev"
+    "dev": "pnpm build && node --env-file=.env.local scripts/run-example.mjs dev",
+    "example:build": "pnpm build && node --env-file=.env.local scripts/run-example.mjs build",
+    "example:preview": "pnpm --dir examples/basic exec astro preview --host 127.0.0.1"
+  },
+  "peerDependencies": {
+    "astro": "5.9.0 || 5.18.2 || 6.0.0 || 6.4.8 || 7.3.3 || 7.3.5"
   },
   "devDependencies": {
     "astro": "7.3.5",

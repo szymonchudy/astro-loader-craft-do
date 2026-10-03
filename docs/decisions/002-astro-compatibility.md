@@ -2,7 +2,7 @@
 
 Date: 2026-10-03
 
-Status: Provisional implementation target; runtime compatibility is unverified.
+Status: Exact-version experimental compatibility verified by clean tarball consumers.
 
 ## Context
 
@@ -10,7 +10,37 @@ The owner prefers the earliest practical Astro major and can upgrade the
 private blog independently. The loader should use Astro's supported rendering
 facilities and avoid maintaining its own Markdown renderer.
 
-## Direction
+## Package-validation decision
+
+The owner requested resolving compatibility without advertising unverified
+versions. The npm peer dependency admits exactly Astro 5.9.0, 5.18.2, 6.0.0,
+6.4.8, 7.3.3, and 7.3.5. All passed fresh tarball installation, declaration and
+schema inference checks, real rendering, invalid-data build failures, and cached
+snapshot replacement on Node 26.10.0 with TypeScript 6.0.3. The blog's installed
+7.3.3 also passed its isolated Sätteri renderer check. See the
+[reproducible evidence](../research/package-validation.md).
+
+Astro remains a peer because the consumer owns its framework and Markdown
+processor. It is also a development dependency for compiling/testing the package.
+There are no package runtime dependencies or renderer fallbacks.
+
+The tested minimum is 5.9.0, but this does not mean every version after 5.9 is
+supported. A broad `>=5.9 <8` or caret range would admit untested versions. Astro
+7 only would discard working older consumers. Exact versions are deliberately
+conservative during experimental development; expand them after targeted checks.
+An enduring beta compatibility policy still requires owner review before release.
+
+Observed output is semantically equivalent for the tested normalization fixture,
+with serialization differences such as empty HTML attributes. Leading
+frontmatter-like body text remains visible in the tested 5.x versions and is
+stripped in 6.x/7.x, matching the recorded source investigation. Metadata remains
+schema-controlled. Do not promise byte-identical HTML across framework versions.
+
+This milestone verifies Node 26.10.0 only. It establishes no historical Node
+support promise or new engine restriction; broader runtime policy belongs to beta
+planning. No release or publication is authorized by these checks.
+
+## Original investigation direction
 
 Target Astro 5.9 and later within majors 5, 6, and 7 for investigation. Do not
 advertise a supported range or publish a broad peer dependency until type

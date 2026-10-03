@@ -1,12 +1,17 @@
 import { defineCollection } from 'astro:content';
 import { z } from 'astro/zod';
+import { craftCollection } from 'astro-loader-craft-do';
 import { fixtureCollection } from './fixture-loader';
 
-// This slice exercises the draft nested layout with synthetic data.
-// Replace fixtureCollection with craftCollection({ apiUrl, apiKey, collectionId })
-// once the package's client and normalization slices are implemented.
+// Tests opt into synthetic HTTP responses. Normal usage reads the Craft sample.
 const articles = defineCollection({
-  loader: fixtureCollection(),
+  loader: import.meta.env.CRAFT_TEST_FIXTURE === '1'
+    ? fixtureCollection()
+    : craftCollection({
+        apiUrl: import.meta.env.CRAFT_API_URL,
+        apiKey: import.meta.env.CRAFT_API_KEY,
+        collectionId: import.meta.env.CRAFT_COLLECTION_ID,
+      }),
   schema: z.object({
     title: z.string().min(1),
     properties: z.object({

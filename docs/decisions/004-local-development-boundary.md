@@ -3,6 +3,8 @@
 Date: 2026-10-03
 
 Status: Implemented local development setup; no release or compatibility promise.
+This records the original scaffold checkpoint. A subsequent working-loader
+checkpoint exports `craftCollection` and `CraftCollectionOptions`; see decision 006.
 
 ## Context and decision
 
@@ -39,6 +41,11 @@ Astro's parse/store/render workflow, schema type inference, explicit defaults,
 and invalid-data build failure; it does not establish Craft API correctness.
 
 Workspace linking does not replace clean tarball installation tests before beta.
+
+The subsequent [package-validation milestone](../research/package-validation.md)
+now tests clean npm installs of the tarball, including emitted declarations and
+exact Astro peer versions. `prepack` builds the package before packaging. The
+placeholder version and private flag remain; no release was created.
 Keep the example small enough to extract later: the owner suggested promoting
 it to a separate Astro + Craft starter (working name `astro-craft-stater`). This
 is a future possibility, not part of the loader's current scope.

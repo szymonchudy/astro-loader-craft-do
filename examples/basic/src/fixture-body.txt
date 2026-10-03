@@ -1,0 +1,60 @@
+<collectionItem>
+  <title>Synthetic article</title>
+  <content>
+    ## Synthetic body
+
+    Rendered through **Astro**.
+
+    <callout>Keep **emphasis** and `code`.</callout>
+    After the callout.
+
+    > An ordinary quotation.
+
+    <callout>
+      A multiline note.
+
+      - First note
+        - Nested note
+
+      ```html
+      <callout>Literal example</callout>
+      ```
+    </callout>
+
+    + Why this matters
+      - This explanation should start collapsed.
+      + Nested explanation
+        **Nested body** with <highlight color="mint">emphasis</highlight>.
+
+        ```md
+        + Literal toggle
+          - Literal child
+        ```
+    After the toggle.
+
+    - Parent list
+      + Details inside a list
+        - Child inside list details
+    - Next list item
+
+    > + Details inside a quote
+    >   Quoted explanation.
+
+    A <highlight color="yellow">**highlighted** phrase</highlight> and ==shorthand==.
+
+    <caption>An *image caption*.</caption>
+
+    <page textStyle="card">
+      <pageTitle>Nested page</pageTitle>
+      <content>
+        <callout>Nested-page note.</callout>
+      </content>
+    </page>
+
+    | Name | Value |
+    | --- | --- |
+    | Example | Preserved |
+
+    [Link](https://example.com/article) and ![Image](https://example.com/image.png)
+  </content>
+</collectionItem>

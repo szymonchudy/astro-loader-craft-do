@@ -70,9 +70,9 @@ not approve an npm release or imply API stability.
 
 ## Pending decisions and validation
 
-- Compatibility: investigate Astro 5.9 and later, including majors 6 and 7,
-  using the native Markdown-rendering helper. The supported version range
-  remains conditional on actual consumer builds and type checks.
+- Compatibility: the original Astro 5.9+ investigation now has six verified
+  exact versions; see [decision 002](002-astro-compatibility.md). An enduring beta
+  compatibility policy remains subject to owner review before release.
 - Onboarding: investigate a duplicable Craft sample document containing a
   Collection and matching Astro example. Verify that duplication preserves
   property types and item bodies, and document how to find the copied

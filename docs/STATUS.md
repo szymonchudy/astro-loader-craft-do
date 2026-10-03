@@ -2,114 +2,87 @@
 
 Updated: 2026-10-03
 
-## Current milestone
+## Current checkpoint
 
-Build the first working loader in a fresh Astro consumer app, using the pairing
-workflow in `AGENTS.md`. Discovery and the initial owner questions are complete.
-Do not restart them. The package scaffold, synthetic Astro consumer, and internal
-read-only client are implemented. Normalization and the production loader remain.
+Package-validation milestone complete locally. The working loader, normalizer,
+consumer examples, and clean tarball matrix are included in this local checkpoint.
+The package remains experimental, private, version 0.0.0, and unpublished.
+No beta compatibility commitment, push, publication, or release occurred.
+
+Owner preference: complete coherent milestones autonomously, preserve owner edits,
+keep updates concise, and ask only for consequential choices or genuine blockers.
+Reserve mentoring checkpoints for impactful concepts. Do not repeat discovery.
 
 ## Read next
 
-- [Initial scope and ownership](decisions/001-initial-scope.md): accepted choices.
-- [Astro compatibility investigation](decisions/002-astro-compatibility.md):
-  provisional version targets, not tested support.
-- [Public API proposal](decisions/003-public-api-proposal.md): user-authored Zod
-  validation, inferred types, and build failure are confirmed requirements.
-  Nested `properties` is still a proposed data layout, not a beta commitment.
-- [Sample observations](research/sample-observations.md): direct REST evidence
-  and unresolved rendering issues; do not infer raw API shapes from connector
-  formatting.
-- [Sample Collection guide](sample-collection.md): already prepared by the owner.
-- [Local development boundary](decisions/004-local-development-boundary.md):
-  implemented scaffold and first consumer validation evidence.
-- [Read-only client boundary](decisions/005-read-only-client-boundary.md):
-  transport checks, error handling, synthetic evidence, and remaining uncertainty.
+- [Scope](decisions/001-initial-scope.md) and [verified compatibility](decisions/002-astro-compatibility.md).
+- [Package evidence and reproduction](research/package-validation.md).
+- [Data and schemas](decisions/003-public-api-proposal.md): nested properties remains
+  experimental; consumer Zod controls validation, defaults, and inferred types.
+- [Working loader](decisions/006-first-working-loader.md),
+  [consumer rendering](decisions/007-consumer-block-rendering-proposal.md), and
+  [normalization contract](normalization.md).
+- Recorded [sample evidence](research/sample-observations.md),
+  [native export](research/native-markdown-export.md), and [sample guide](sample-collection.md).
 
-`START_PROMPT.md` remains the full charter. Consult it for significant scope
-and release decisions, rather than replaying the completed "Start now" phase.
+START_PROMPT.md remains the charter for consequential decisions.
 
-## Existing implementation and access
+## Verified result
 
-- `scripts/inspect-craft.mjs` is a read-only research probe, not the loader.
-  It ran successfully against the sample. It reports shapes and suppresses
-  credentials, IDs, body text, and media URLs. The package manifest, strict
-  TypeScript build, pnpm workspace, and synthetic example tests now exist.
-- `.env.local` contains working sample connection settings and is ignored by
-  Git. Never print or commit its contents. Load it only into local processes.
-- `gh` is authenticated as the intended owner. The repository lookup returned
-  404 during setup. No remote repository, remote, npm account, or release was
-  created in this work. Recheck external state before acting on it.
-- The setup and first consumer checkpoint, including owner charter edits, were
-  committed locally as `46fc950`. No push or publication occurred. Inspect Git
-  status before continuing and preserve subsequent owner edits.
-- Model recommendation for the next chat: GPT-6.1 Sol / Medium. The existing
-  `.codex/config.toml` still defaults to Astra / High; select the intended
-  model explicitly in the new chat. No configuration was changed for this.
+- Public exports: craftCollection, CraftCollectionOptions, CraftRenderers. Three
+  required connection settings; optional synchronous block renderers. No blog
+  conventions or schema-generation options in the package.
+- Await parseData for every entry and store its returned defaults/transforms.
+  Prepare the full rendered snapshot before replacement; failures preserve the
+  previous snapshot and empty loads remove stale entries. Body changes affect digests.
+- Defaults preserve callouts as semantic asides distinct from quotes, normalize
+  nested pages/highlights/captions, and render nested toggles as closed details.
+  Code literals and link destinations are protected. Consumers can override all
+  five supported block renderers before Astro processes Markdown.
+- npm pack builds through prepack. The tarball contains exactly 11 intended files:
+  emitted JS/declarations, package metadata, README, and license. Clean npm consumers
+  have no workspace links or package-source imports; internal exports are closed.
+- Exact Astro peers: 5.9.0, 5.18.2, 6.0.0, 6.4.8, 7.3.3, 7.3.5. Every version passes
+  tarball installation, exports/declarations, precise schema inference/defaults,
+  default/override rendering, five invalid-data builds, and cached stale removal.
+  No untested intermediate/future version is advertised.
+- Required blog case: installed Astro 7.3.3 with Sätteri 0.4.1 and its actual
+  callout plugin passes isolated tarball rendering of insights, rich lists/code,
+  distinct quotations, and nested closed details. Blog files were only read.
+- Leading body frontmatter is visible Markdown on tested Astro 5 versions and
+  stripped by 6/7. It never replaces validated Collection metadata.
 
-## Completed pairing checkpoint: first implementation slice
+## Reproduce and inspect
 
-The root package compiles ESM JavaScript and declarations; `examples/basic` is
-a fresh consumer linked through package exports. The package is private, has
-no runtime dependencies, and exports no API yet. Its placeholder version is
-not a release decision.
+- pnpm test: 34 portable checks; no credentials or live API requests.
+- pnpm typecheck and git diff --check: package types and patch whitespace.
+- pnpm test:package: six clean temporary consumers; requires npm registry access.
+- pnpm test:package --blog /Users/szymonchudy/Personal/chudy-me: same matrix plus
+  the actual blog renderer. Prints tarball, results, and consumer artifact paths.
+- Matrix runtime: Node 26.10.0, TypeScript 6.0.3, @astrojs/check 0.9.10, macOS arm64.
+  Broader Node/platform policy remains beta planning, not inferred support.
+- pnpm example:build / example:preview / dev remain the live sample workflow using
+  ignored root .env.local. Earlier live checks verified three entries and the native
+  toggle in the browser; no live refetch was needed for package validation.
+  During dev, press s then Enter to sync Craft; use the dev URL printed by Astro.
+- Test output uses dist-fixture and preserves the live dist preview. The library
+  never loads env files itself. Never print or commit credentials, connection URLs,
+  private bodies/IDs, or media URLs. Reuse synthetic fixtures and recorded research.
 
-The consumer shows a complete `defineCollection({ loader, schema })` using a
-synthetic object loader and the proposed nested `properties` layout. That
-layout remains open for owner review. The fixture omits tags; only the user's
-schema supplies their default. No Craft credentials or live calls were used.
+## Remaining milestones
 
-Verified locally on Node 26.10.0, pnpm 12.8.1, Astro 7.3.5, TypeScript 6.0.3:
+Inspect this completed package checkpoint before beginning another milestone.
+Full blog migration, media downloading/lifetime, internal route mapping, exhaustive
+Craft block/property coverage, large Collections/rate limits, and beta/release
+hygiene remain separate work. The example may later become a starter.
+Public API and longer-term compatibility/runtime commitments need owner review
+before beta. No npm publication is approved.
 
-- `pnpm test`: package compilation, successful Astro build, HTML assertions for
-  metadata/defaults and Markdown rendering, consumer type check with exact
-  schema type assertions, invalid-status build failure naming the item/field,
-  and restoration of the successful build. Invalid data was tested with the
-  existing Astro cache, not only in a clean build.
-- `pnpm typecheck` and `pnpm peers check`: passed.
-- `git diff --check`: passed. Existing owner edits were preserved.
+## Git and external state
 
-Run `pnpm dev` to inspect the synthetic example. See
-`examples/basic/README.md` and `src/content.config.ts` inside that app.
-The owner reviewed this checkpoint and authorized continuing to the client slice.
-
-## Completed pairing checkpoint: read-only client
-
-`src/craft-client.ts` lists items and reads raw Markdown through two internal
-GET operations. It validates response structure and duplicate IDs, preserves
-user-defined properties and empty values, and reports sanitized failures.
-It does not import Astro, read environment variables, or add public exports.
-
-`pnpm test`: all 11 tests passed (10 client checks plus the existing Astro
-consumer check). `pnpm typecheck` and `git diff --check` passed. All response
-fixtures are synthetic; no live Craft requests or content mutations occurred.
-The suite verifies timeout-error handling, not a real timed cancellation.
-
-Pause here for owner inspection before normalization.
-
-## Next implementation slice
-
-Review the proposed nested entry mapping with the owner, then implement
-normalization using synthetic fixtures: preserve property keys, distinguish
-empty bodies from metadata wrappers, and remove structural indentation without
-breaking lists or code. Define unsupported-value behavior explicitly. Keep
-normalization independent of HTTP and Astro. Repeat live sample requests only
-when they answer an unresolved question or verify newly integrated behavior.
-
-Progress toward the milestone in small slices: read-only client, normalization,
-Astro loading/validation/rendering, then consumer verification. The milestone
-is done when sample content renders through `getCollection()` and `render()`,
-the schema gives real inferred types, and malformed synthetic data fails the
-build. The intentional empty-value item may require explicitly optional/defaulted
-fields in the successful example. Do not weaken the schema silently or mutate
-Craft content to make tests pass.
-
-Markdown wrappers and indentation need normalization. Image lifetime, internal
-links, large-Collection completeness, and cross-version builds remain unverified.
-The private blog will be used for later dogfooding, not as the initial fixture.
-The owner suggested later extracting the basic example into an Astro + Craft
-starter; keep that possibility separate from the current loader milestone.
-
-Repository publication during development was authorized by the owner, but
-publishing is not part of this first implementation slice. No npm publication
-has been approved.
+Earlier local commits: 46fc950 (setup), 4fa9927 (client). This checkpoint preserves
+and commits the previously uncommitted loader/normalizer/example/workflow edits
+alongside package validation; inspect git log for its commit ID.
+No push, package publication, or release occurred. Repository publication was
+previously authorized but remains outside this milestone; recheck availability
+before any future external action.
