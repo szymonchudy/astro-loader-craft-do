@@ -22,7 +22,8 @@ snapshot replacement on Node 26.10.0 with TypeScript 6.0.3. The blog's installed
 
 Astro remains a peer because the consumer owns its framework and Markdown
 processor. It is also a development dependency for compiling/testing the package.
-There are no package runtime dependencies or renderer fallbacks.
+Sharp is the sole runtime dependency, used to fully decode native images before
+snapshot replacement. There are no renderer fallbacks.
 
 The tested minimum is 5.9.0, but this does not mean every version after 5.9 is
 supported. A broad `>=5.9 <8` or caret range would admit untested versions. Astro

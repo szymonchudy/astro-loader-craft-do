@@ -46,10 +46,12 @@ console.log(`Isolated package consumers: ${work}`);
 const packed = await run('npm', ['pack', '--json', '--pack-dest', work], repo);
 // Lifecycle output can precede npm's JSON array.
 const manifest = JSON.parse(packed.stdout.slice(packed.stdout.indexOf('[\n')))[0];
-const expected = ['LICENSE', 'README.md', 'package.json', ...['craft-client', 'index', 'loader', 'normalize'].flatMap(name => [`dist/${name}.js`, `dist/${name}.d.ts`])].sort();
+const expected = ['LICENSE', 'README.md', 'package.json', ...['asset-rendering', 'craft-client', 'images', 'index', 'loader', 'normalize'].flatMap(name => [`dist/${name}.js`, `dist/${name}.d.ts`])].sort();
 assert.deepEqual(manifest.files.map(file => file.path).sort(), expected, 'Unexpected tarball file set');
 const tarball = join(work, manifest.filename);
 const results = [];
+const { default: sharp } = await import('sharp');
+const nativeBytes = await sharp({ create: { width: 320, height: 180, channels: 3, background: '#aabbcc' } }).png().toBuffer();
 
 function assertClosedNestedDetails(html) {
   let depth = 0;
@@ -90,7 +92,7 @@ for (const version of versions) {
   console.log(`Installing clean Astro ${version} consumer…`);
   const root = join(work, `astro-${version}`);
   mkdirSync(join(root, 'src/pages'), { recursive: true });
-  writeFileSync(join(root, 'package.json'), JSON.stringify({ name: 'craft-package-consumer', private: true, type: 'module', dependencies: { astro: version, 'astro-loader-craft-do': `file:${tarball}` }, devDependencies: { '@astrojs/check': '0.9.10', typescript: '6.0.3' } }, null, 2));
+  writeFileSync(join(root, 'package.json'), JSON.stringify({ name: 'craft-package-consumer', private: true, type: 'module', dependencies: { astro: version, 'astro-loader-craft-do': `file:${tarball}` }, devDependencies: { '@astrojs/check': '0.9.10', typescript: '6.0.3', '@types/node': '24.19.1' } }, null, 2));
   writeFileSync(join(root, 'tsconfig.json'), JSON.stringify({ extends: 'astro/tsconfigs/strict', compilerOptions: { noUncheckedIndexedAccess: true, exactOptionalPropertyTypes: true }, include: ['.astro/types.d.ts', 'src/**/*'] }));
   writeFileSync(join(root, 'astro.config.mjs'), "import { defineConfig } from 'astro/config'; export default defineConfig({});\n");
   for (const name of ['content.config.ts', 'boundary.typecheck.ts']) copyFileSync(join(repo, 'scripts/fixtures/package-consumer', name), join(root, 'src', name));
@@ -98,6 +100,7 @@ for (const version of versions) {
   copyFileSync(join(repo, 'examples/basic/src/fixture-body.txt'), join(root, 'src/fixture-body.txt'));
   copyFileSync(join(repo, 'examples/basic/src/inference.typecheck.ts'), join(root, 'src/inference.typecheck.ts'));
   copyFileSync(join(repo, 'scripts/fixtures/blog-renderers.mjs'), join(root, 'src/blog-renderers.mjs'));
+  writeFileSync(join(root, 'src/native.png'), nativeBytes);
   await run('npm', ['install', '--no-audit', '--no-fund', '--fetch-retries=0', '--fetch-timeout=30000'], root);
   const installed = join(root, 'node_modules/astro-loader-craft-do');
   assert.equal(lstatSync(installed).isSymbolicLink(), false);
@@ -111,14 +114,14 @@ for (const version of versions) {
   assert.equal(packageMetadata.peerDependencies.astro, verifiedVersions.join(' || '));
   assert.deepEqual(packageMetadata.exports, { '.': { types: './dist/index.d.ts', import: './dist/index.js' } });
   assert.deepEqual(packageMetadata.files, ['dist']);
-  assert.equal(packageMetadata.dependencies, undefined, 'No runtime dependencies expected');
+  assert.deepEqual(Object.keys(packageMetadata.dependencies), ['sharp'], 'Only the raster validator is a runtime dependency');
   const astroPackage = JSON.parse(readFileSync(join(root, 'node_modules/astro/package.json'), 'utf8'));
   assert.equal(astroPackage.version, version);
   const installedFiles = [];
   function files(directory, prefix = '') {
     for (const entry of readdirSync(directory, { withFileTypes: true })) {
       const name = prefix + entry.name;
-      if (entry.isDirectory()) files(join(directory, entry.name), name + '/');
+      if (entry.isDirectory()) { if (entry.name !== 'node_modules') files(join(directory, entry.name), name + '/'); }
       else installedFiles.push(name);
     }
   }
@@ -133,6 +136,12 @@ for (const version of versions) {
   const cli = join(root, 'node_modules/astro', astroPackage.bin.astro);
   const build = (extra = {}, success = true) => run(process.execPath, [cli, 'build'], root, extra, success);
   const html = () => readFileSync(join(root, 'dist/index.html'), 'utf8');
+  await build({ PACKAGE_NATIVE: 'enabled' });
+  assert.match(html(), /alt="Native \*literal\* _word_ `code` &amp;copy; image"/);
+  assert.match(html(), /Native <strong>rich<\/strong>/);
+  assert.match(html(), /src="\/_astro\//);
+  assert.doesNotMatch(html(), /r\.craft\.do|signature=|__ASTRO_IMAGE_/);
+  assert.equal((html().match(/<figure data-craft-image/g) ?? []).length, 1);
   await build();
   assertDefault(html());
   await run(process.execPath, [cli, 'check'], root);

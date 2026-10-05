@@ -139,3 +139,32 @@ test('response stream failures are sanitized for both formats', async () => {
   await assert.rejects(client.listCollectionItems('collection'), /could not be read as JSON/);
   await assert.rejects(client.getItemMarkdown('item'), /Markdown response could not be read/);
 });
+
+test('exhausts item/root/nested cursors without rereading complete inline descendants', async () => {
+  const calls=[];
+  const row=id=>({id,title:id,properties:{}});
+  const child={id:'inline',type:'page',content:[{id:'text',type:'text',markdown:'Unchanged prose'}]};
+  const client=createCraftClient(connection,async(url,init)=>{
+    const id=url.searchParams.get('id');const cursor=url.searchParams.get('cursor');calls.push([id,cursor,init.headers.Accept]);
+    if(url.pathname.endsWith('/items'))return Response.json(cursor?{items:[row('second')]}:{items:[row('first')],nextCursor:'items-2'});
+    if(init.headers.Accept==='text/markdown')return new Response(cursor?'second body':'first body');
+    if(id==='nested')return Response.json({id,type:'page',content:cursor?[{id:'nested-image',type:'image',url:'https://r.craft.do/x',markdown:'![x](https://r.craft.do/x)'}]:[{id:'nested-text',type:'text',markdown:'Nested prose'}],...(!cursor?{nextCursor:'nested-2'}:{})});
+    return Response.json({id,type:'collectionItem',content:cursor?[{id:'tail',type:'text',markdown:'Tail'}]:[child,{id:'nested',type:'page',content:[],nextCursor:'nested-2'}],...(!cursor?{nextCursor:'root-2'}:{})});
+  });
+  assert.deepEqual((await client.listCollectionItems('collection')).map(i=>i.id),['first','second']);
+  const root=await client.getItemBlocks('first');assert.deepEqual(root.content.map(b=>b.id),['inline','nested','tail']);assert.equal(root.content[1].content[1].id,'nested-image');
+  assert(!calls.some(([id])=>id==='inline'||id==='text'));
+  assert.deepEqual(await client.getItemMarkdownPages('first'),['first body','second body']);
+  assert.deepEqual(calls.filter(([, ,format])=>format==='text/markdown').map(([,cursor])=>cursor),[null,'root-2']);
+});
+
+test('rejects repeated cursors, inconsistent root identities and duplicate structured IDs',async()=>{
+  for(const mode of ['cursor','identity','duplicate','cycle']){
+    const client=createCraftClient(connection,async(url)=>{
+      const id=url.searchParams.get('id');const cursor=url.searchParams.get('cursor');
+      if(mode==='cycle')return Response.json({id,type:'page',content:[{id,type:'page'}]});
+      return Response.json({id:mode==='identity'&&cursor?'wrong':id,type:'collectionItem',content:[{id:mode==='duplicate'?'same':String(cursor),type:'text',markdown:'x'}],...(!cursor||mode==='cursor'?{nextCursor:'next'}:{})});
+    });
+    await assert.rejects(client.getItemBlocks('item'),/repeated|inconsistent|duplicate|cyclic/);
+  }
+});

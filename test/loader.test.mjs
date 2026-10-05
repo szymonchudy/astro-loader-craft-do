@@ -4,9 +4,9 @@ import { craftCollection } from '../dist/index.js';
 
 function fixtureLoader(items, renderers, body = '<collectionItem>\n  <title>Empty</title>\n</collectionItem>') {
   const originalFetch = globalThis.fetch;
-  globalThis.fetch = async (input) => new URL(String(input)).pathname.endsWith('/items')
+  globalThis.fetch = async (input, init) => new URL(String(input)).pathname.endsWith('/items')
     ? Response.json({ items })
-    : new Response(body);
+    : init?.headers?.Accept === 'application/json' ? Response.json({ id: new URL(String(input)).searchParams.get('id'), type: 'collectionItem', content: [] }) : new Response(body);
   try {
     return craftCollection({ apiUrl: 'https://connect.craft.do/link/synthetic/api/v1', apiKey: 'synthetic', collectionId: 'synthetic', renderers });
   } finally {

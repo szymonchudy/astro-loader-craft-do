@@ -15,6 +15,50 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+
+/** Structured blocks are read only at the transport boundary. */
+export interface CraftBlock {
+  id: string;
+  type: string;
+  markdown?: string;
+  url?: string;
+  altText?: string;
+  textStyle?: string;
+  indentationLevel?: number;
+  listStyle?: string;
+  content?: CraftBlock[];
+  /** Internal continuation hint; never exposed as consumer metadata. */
+  nextCursor?: string;
+}
+
+function cursorOf(value: Record<string, unknown>): string | undefined {
+  const pagination = isRecord(value.pagination) ? value.pagination : value;
+  const cursor = pagination.nextCursor;
+  if (cursor === undefined || cursor === null) return undefined;
+  if (typeof cursor !== 'string' || !cursor) throw new Error('Craft returned an invalid pagination cursor.');
+  return cursor;
+}
+function parseBlock(value: unknown, depth = 0): CraftBlock {
+  if (depth > 64) throw new Error('Craft structured blocks exceed the supported nesting depth.');
+  if (!isRecord(value) || typeof value.id !== 'string' || !value.id.trim() || typeof value.type !== 'string') throw new Error('Craft returned invalid structured blocks.');
+  for (const key of ['markdown', 'url', 'altText', 'textStyle', 'listStyle']) {
+    if (value[key] !== undefined && typeof value[key] !== 'string') throw new Error('Craft returned invalid structured block fields.');
+  }
+  if (value.indentationLevel !== undefined && (!Number.isInteger(value.indentationLevel) || Number(value.indentationLevel) < 0 || Number(value.indentationLevel) > 5)) throw new Error('Craft returned invalid block indentation.');
+  if (value.content !== undefined && !Array.isArray(value.content)) throw new Error('Craft returned invalid block children.');
+  const nextCursor = cursorOf(value);
+  return { id: value.id, type: value.type,
+    ...(value.indentationLevel === undefined ? {} : { indentationLevel: value.indentationLevel as number }),
+    ...(value.listStyle === undefined ? {} : { listStyle: value.listStyle as string }),
+    ...(nextCursor ? { nextCursor } : {}),
+    ...(value.markdown === undefined ? {} : { markdown: value.markdown as string }),
+    ...(value.url === undefined ? {} : { url: value.url as string }),
+    ...(value.altText === undefined ? {} : { altText: value.altText as string }),
+    ...(value.textStyle === undefined ? {} : { textStyle: value.textStyle as string }),
+    ...(value.content === undefined ? {} : { content: (value.content as unknown[]).map(child => parseBlock(child, depth + 1)) }),
+  };
+}
+
 function requireId(id: string): void {
   if (typeof id !== 'string' || !id.trim() || id === '.' || id === '..') {
     throw new Error('Craft item and Collection IDs must be nonempty identifiers.');
@@ -103,30 +147,97 @@ export function createCraftClient(connection: CraftConnection, request: typeof f
     return response;
   }
 
+  const itemCursors = new Map<string, (string | undefined)[]>();
+
+  async function markdownPage(itemId: string, cursor?: string): Promise<string> {
+    const query = new URLSearchParams({ id: itemId, maxDepth: '-1', ...(cursor ? { cursor } : {}) });
+    const response = await read(`blocks?${query}`, 'text/markdown', 'reading item Markdown');
+    try { return await response.text(); }
+    catch { throw new Error('Craft item Markdown response could not be read.'); }
+  }
+
   return {
     async listCollectionItems(collectionId: string): Promise<CraftItem[]> {
       requireId(collectionId);
-      const path = `collections/${encodeURIComponent(collectionId)}/items?maxDepth=0`;
-      const response = await read(path, 'application/json', 'reading Collection items');
-      let value: unknown;
-      try {
-        value = await response.json();
-      } catch {
-        throw new Error('Craft Collection items response could not be read as JSON.');
+      const items: CraftItem[] = [];
+      const seen = new Set<string>();
+      let cursor: string | undefined;
+      do {
+        const query = new URLSearchParams({ maxDepth: '0', ...(cursor ? { cursor } : {}) });
+        const response = await read(`collections/${encodeURIComponent(collectionId)}/items?${query}`, 'application/json', 'reading Collection items');
+        let value: unknown;
+        try { value = await response.json(); } catch { throw new Error('Craft Collection items response could not be read as JSON.'); }
+        items.push(...parseItems(value));
+        cursor = cursorOf(value as Record<string, unknown>);
+        if (cursor && seen.has(cursor)) throw new Error('Craft returned a repeated pagination cursor.');
+        if (cursor) seen.add(cursor);
+      } while (cursor);
+      if (new Set(items.map(item => item.id)).size !== items.length) throw new Error('Craft returned duplicate Collection items across pages.');
+      return items;
+    },
+
+    async getItemBlocks(itemId: string): Promise<CraftBlock> {
+      requireId(itemId);
+      const active = new Set<string>();
+      async function complete(id: string, depth = 0): Promise<CraftBlock> {
+        if (active.has(id) || depth > 64) throw new Error('Craft returned cyclic or excessively nested blocks.');
+        active.add(id);
+        let root: CraftBlock | undefined;
+        let cursor: string | undefined;
+        const seen = new Set<string>();
+        const cursors: (string | undefined)[] = [];
+        do {
+          cursors.push(cursor);
+          const query = new URLSearchParams({ id, maxDepth: '-1', ...(cursor ? { cursor } : {}) });
+          const response = await read(`blocks?${query}`, 'application/json', 'reading structured item blocks');
+          let value: unknown;
+          try { value = await response.json(); } catch { throw new Error('Craft structured blocks response could not be read as JSON.'); }
+          const block = parseBlock(value);
+          if (block.id !== id || (root && root.type !== block.type)) throw new Error('Craft returned inconsistent block pagination.');
+          if (!root) root = block;
+          else root.content = [...(root.content ?? []), ...(block.content ?? [])];
+          cursor = block.nextCursor;
+          if (cursor && seen.has(cursor)) throw new Error('Craft returned a repeated block pagination cursor.');
+          if (cursor) seen.add(cursor);
+        } while (cursor);
+        // maxDepth=-1 already includes descendants. Re-read only an explicitly
+        // incomplete subtree; do not redownload every inline nested page.
+        async function expand(block: CraftBlock) {
+          for (let i = 0; i < (block.content?.length ?? 0); i++) {
+            const child = block.content![i]!;
+            const isPage = child.type === 'page' || child.type === 'card' || child.textStyle === 'page' || child.textStyle === 'card';
+            if (child.nextCursor || (isPage && child.content === undefined)) block.content![i] = await complete(child.id, depth + 1);
+            else await expand(child);
+          }
+        }
+        delete root!.nextCursor;
+        await expand(root!);
+        active.delete(id);
+        if (id === itemId) itemCursors.set(itemId, cursors);
+        return root!;
       }
-      return parseItems(value);
+      const root = await complete(itemId);
+      const ids = new Set<string>();
+      function validate(block: CraftBlock) {
+        if (ids.has(block.id)) throw new Error('Craft returned duplicate structured block IDs.');
+        ids.add(block.id);
+        for (const child of block.content ?? []) validate(child);
+      }
+      validate(root);
+      return root;
     },
 
     async getItemMarkdown(itemId: string): Promise<string> {
       requireId(itemId);
-      const query = new URLSearchParams({ id: itemId, maxDepth: '-1' });
-      const response = await read(`blocks?${query}`, 'text/markdown', 'reading item Markdown');
-      try {
-        // Preserve wrappers and whitespace for the normalization slice.
-        return await response.text();
-      } catch {
-        throw new Error('Craft item Markdown response could not be read.');
-      }
+      return markdownPage(itemId);
+    },
+
+    /** Match root JSON pagination so a continuation never silently loses prose. */
+    async getItemMarkdownPages(itemId: string): Promise<string[]> {
+      requireId(itemId);
+      const pages: string[] = [];
+      for (const cursor of itemCursors.get(itemId) ?? [undefined]) pages.push(await markdownPage(itemId, cursor));
+      return pages;
     },
   };
 }

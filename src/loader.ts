@@ -1,3 +1,8 @@
+import { createHash } from 'node:crypto';
+import { fileURLToPath } from 'node:url';
+import { relative } from 'node:path';
+import { registerImageRendering } from './asset-rendering.js';
+import { localizeImages } from './images.js';
 import type { Loader } from 'astro/loaders';
 import { createCraftClient } from './craft-client.js';
 import { normalizeItemMarkdown, type CraftRenderers } from './normalize.js';
@@ -16,22 +21,31 @@ export interface CraftCollectionOptions {
 
 /** Experimental build-time Collection loader. Provide validation through Astro's schema. */
 export function craftCollection(options: CraftCollectionOptions): Loader {
-  const client = createCraftClient(options);
+  const request = fetch;
+  const client = createCraftClient(options, request);
   return {
     name: 'astro-loader-craft-do',
-    async load({ parseData, renderMarkdown, store, generateDigest, logger }) {
+    async load({ config, parseData, renderMarkdown, store, generateDigest, logger }) {
       const items = await client.listCollectionItems(options.collectionId);
       // Prepare the complete next snapshot before replacing the current store.
       // Sequential reads keep the small initial sample from bursting requests.
       const entries = [];
       for (const item of items) {
+        const blocks = await client.getItemBlocks(item.id);
+        const cache = new URL('craft-images/', config?.cacheDir ?? new URL('./node_modules/.astro/', import.meta.url));
+        const fileURL = new URL(`${createHash('sha256').update(item.id).digest('hex')}.md`, cache);
+        const absolutePath = fileURLToPath(fileURL);
+        const filePath = config ? relative(fileURLToPath(config.root), absolutePath).replaceAll('\\', '/') : absolutePath;
+        const native = await localizeImages(blocks, cache, request);
         const data = await parseData({
-          id: item.id,
-          data: { title: item.title, properties: item.properties },
+          id: item.id, filePath: absolutePath,
+          data: { title: item.title, properties: item.properties, images: native.map(({ image }) => image) },
         });
-        const body = normalizeItemMarkdown(await client.getItemMarkdown(item.id), options.renderers);
-        const rendered = await renderMarkdown(body);
-        entries.push({ id: item.id, data, body, rendered, digest: generateDigest({ data, body }) });
+        const markdownPages = await client.getItemMarkdownPages(item.id);
+        const body = markdownPages.map(page => normalizeItemMarkdown(page, options.renderers, native)).join('\n\n');
+        if (native.some(image => !image.used)) throw new Error('Craft native images do not match complete item Markdown.');
+        const rendered = registerImageRendering(await renderMarkdown(body, { fileURL }), native.map(({ image }) => image));
+        entries.push({ id: item.id, data, body, rendered, filePath, assetImports: rendered.metadata?.imagePaths ?? [], digest: generateDigest({ data, body }) });
       }
       store.clear();
       for (const entry of entries) store.set(entry);

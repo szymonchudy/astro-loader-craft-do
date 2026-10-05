@@ -119,3 +119,14 @@ nesting also fail instead of silently discarding content. Unknown ordinary HTML
 is preserved. Comments, math, and other unrelated Markdown extensions are left to
 the configured Astro processor. Images and Craft links keep their URLs: downloading
 media and mapping internal links to site routes remain separate work.
+
+
+## Fences at inline wrapper boundaries
+
+Craft may export `<callout>```language` or `<caption>```language` and append the
+matching wrapper directly to the closing fence delimiter. The normalizer scans
+these boundaries separately from literal code, strips only the enclosing tags,
+and gives the renderer the complete original fenced Markdown. Backtick and tilde
+fences are covered, including literal wrapper/highlight tags within the code.
+Shorter or mismatched closing fences do not close the enclosing Craft wrapper.
+This behavior is reproduced with invented content in `test/normalize.test.mjs`.

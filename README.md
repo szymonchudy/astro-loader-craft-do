@@ -57,7 +57,7 @@ const articles = defineCollection({
     apiKey: import.meta.env.CRAFT_API_KEY,
     collectionId: import.meta.env.CRAFT_COLLECTION_ID,
   }),
-  schema: z.object({
+  schema: ({ image }) => z.object({
     title: z.string().min(1),
     properties: z.object({
       slug: z.string().min(1),
@@ -66,6 +66,13 @@ const articles = defineCollection({
       status: z.enum(['draft', 'published']),
       tags: z.array(z.string()).default([]),
     }),
+    images: z.array(z.object({
+      blockId: z.string(),
+      src: image(),
+      altText: z.string().optional(),
+      captionMarkdown: z.string().optional(),
+      isFirstBlock: z.boolean(),
+    })),
   }),
 });
 
@@ -120,6 +127,32 @@ synchronous; errors fail the load without committing a partial snapshot.
 `CraftRenderers` is exported for adapters defined in separate files. Metadata
 still uses your Zod schema and its inferred types.
 
+### Native images
+
+Native Craft image blocks are downloaded on every successful sync using the
+current media URLs. The loader validates a complete raster decode and saves the
+downloaded bytes unchanged under SHA-256 filenames in Astro's cache. API credentials
+are never sent to media hosts. Duplicate bytes share an asset; changed bytes create
+a new asset. Old files remain available when a later sync fails.
+
+The `images` array preserves document order. `isFirstBlock` means the image is the
+first top-level body block; it does not assign a blog-specific role. Adjacent native
+caption blocks at the same nesting level become rich `captionMarkdown`. Native
+`altText` is preserved literally. The default body renderer emits a figure and
+caption, with a local Markdown image that Astro bundles and optimizes. Use `image()`
+in the consumer schema to resolve each metadata `src` into Astro's ImageMetadata.
+
+An optional `renderers.image` callback receives `CraftImage` metadata plus the
+default figure as `markdown`. Returning `undefined` uses that figure; `''` omits
+the image and its adjacent captions. For example, a blog can return `''` when
+`isFirstBlock` is true and display that image in its own article header. Rich
+caption rendering and responsive sizes remain consumer choices.
+
+This separates four steps: Craft stores the authored image; sync downloads it;
+Astro bundles the local asset; the configured image service/CDN creates visitor
+variants. A signed Craft URL is not a production asset. See the
+[native image contract](docs/native-images.md).
+
 See the [normalization contract](docs/normalization.md) for callback inputs,
 nesting, code protection, summary-label behavior, and supported syntax. The
 [blog adapter fixture](scripts/fixtures/blog-renderers.mjs) shows consumer-owned
@@ -127,12 +160,14 @@ insights and styled details; those conventions are not baked into the package.
 
 ## Current limits
 
-Connection URLs must use HTTPS on `connect.craft.do`. Images and Craft links
-are preserved as remote URLs; image lifetime and local link rewriting remain
-unverified. The loader normalizes observed wrappers and nested pages, rather
+Connection URLs must use HTTPS on `connect.craft.do`. Native image downloads accept
+the observed HTTPS media origins `r.craft.do`, `res.craft.do`, and `res.luki.io`;
+redirects fail closed. Ordinary authored remote Markdown images and Craft links
+remain unchanged. Local link rewriting remains unverified. The loader normalizes
+observed wrappers and nested pages, rather
 than reproducing Craft's full appearance. All property values are passed to
 the consumer schema without conversion; exhaustive property-type support is
-not established. Large-Collection behavior, retries, incremental fetching,
+not established. Large-Collection behavior, API-read retries, incremental fetching,
 and exhaustive Craft coverage remain pending. Leading frontmatter-like body text
 is rendered on the tested Astro 5 versions and stripped by Astro 6/7; body
 frontmatter does not replace validated Collection metadata. A broader Node support

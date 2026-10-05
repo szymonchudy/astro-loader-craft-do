@@ -168,3 +168,21 @@ test('nested callout wrappers and quoted HTML attributes retain their boundaries
   assert.equal(normalizeItemMarkdown(wrap(html)), html);
   assert.throws(() => normalizeItemMarkdown('<collectionItem>\n <content>\n   Body\n </content>\n</collectionItem>'), /Craft/);
 });
+
+
+test('multiline wrappers may close directly after a fenced code delimiter', () => {
+  for (const tag of ['callout', 'caption']) {
+    for (const marker of ['```', '~~~~']) {
+      for (const prefix of ['Intro\n\n', '']) {
+        const inner = `${prefix}${marker}html\n</${tag}>\n<highlight>literal</highlight>\n${marker}`;
+        const body = `<${tag}>${inner}</${tag}>\nAfter`;
+        const seen = [];
+        const result = normalizeItemMarkdown(wrap(body), { [tag]: ({ markdown }) => { seen.push(markdown); return `RENDERED\n${markdown}`; } });
+        assert.deepEqual(seen, [inner]);
+        assert.equal(result, `RENDERED\n${inner}\n\nAfter`);
+      }
+    }
+  }
+  assert.throws(() => normalizeItemMarkdown(wrap('<callout>Intro\n```html\nLiteral\n```')), /unclosed callout/);
+  assert.throws(() => normalizeItemMarkdown(wrap('<callout>````html\nLiteral\n```</callout>')), /unclosed callout/);
+});

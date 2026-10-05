@@ -1,6 +1,6 @@
 # Packed-package consumer evidence
 
-Date: 2026-10-03
+Updated: 2026-10-05
 
 Status: Package-validation milestone complete locally; experimental and unpublished.
 No live Craft requests, private content, blog writes, or remote media downloads.
@@ -49,8 +49,8 @@ animation, styling, MDX, or migration.
 ## Artifact and consumer checks
 
 - `npm pack` runs `prepack` to build emitted JavaScript/declarations before packing.
-  The exact 11-file allowlist is package.json, README.md, LICENSE, and JS/.d.ts for
-  index, loader, normalizer, and internal Craft client. No source, fixtures, env
+  The exact 15-file allowlist is package.json, README.md, LICENSE, and JS/.d.ts for
+  index, loader, normalizer, internal Craft client, images, and asset rendering. No source, fixtures, env
   files, blog code, credentials, or private content ships.
 - Each consumer uses a real npm tarball install. The harness asserts the installed
   package is a directory inside that consumer, with no src directory or workspace
@@ -58,7 +58,7 @@ animation, styling, MDX, or migration.
 - Plain Node imports expose only `craftCollection`. Internal subpaths, source
   paths, and package.json imports fail with ERR_PACKAGE_PATH_NOT_EXPORTED. Metadata
   checks require the intended export/declaration paths, MIT, private 0.0.0,
-  exact Astro peers, and no runtime dependencies.
+  exact Astro peers, and Sharp as the sole runtime dependency.
 - Consumer-authored Zod schemas infer precise status unions, optional descriptions,
   and defaulted string arrays. `astro check` verifies exact type equality (including
   protection against inference becoming any), renderer argument types, Loader
@@ -74,9 +74,11 @@ animation, styling, MDX, or migration.
   overriding validated metadata. An empty snapshot build removes cached entries;
   a final valid build restores and verifies the default fixture.
 
-The portable 34-check suite separately covers child-before-parent callbacks,
+The portable 47-check suite separately covers child-before-parent callbacks,
 fallback/omission/errors, malformed input, literal-code protection, body digests,
-unchanged-entry revalidation, and previous-snapshot preservation on failure.
+unchanged-entry revalidation, previous-snapshot preservation on failure, native
+image decoding/cache identity, complete pagination, and temporary media retries.
+All six versions also pass native-image rendering through Astro's asset pipeline.
 
 ## Compatibility consequence and limits
 
@@ -87,7 +89,7 @@ to Astro, so equivalent HTML can differ in attribute serialization and whitespac
 No separate renderer or cross-version compatibility branch was needed.
 
 This artifact is suitable for local consumer testing, not a release approval.
-Beta API review, runtime policy, CI/release hygiene, media lifetime/localization,
+Beta API review, runtime policy, CI/release hygiene,
 internal routes, exhaustive Craft coverage, and large-Collection behavior remain
 separate work. Full blog migration is outside this milestone.
 
