@@ -1,14 +1,27 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { copyFileSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { basename, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 // Network installs are intentional; this is separate from the portable unit suite.
-// Usage: pnpm test:package [exact-version ...] [--blog /path/to/chudy-me]
+// Usage: pnpm test:package [exact-version ...] [--tarball path | --registry] [--blog path]
 const repo = fileURLToPath(new URL('../', import.meta.url));
 const args = process.argv.slice(2);
+const metadata = JSON.parse(readFileSync(join(repo, 'package.json'), 'utf8'));
+const tarballIndex = args.indexOf('--tarball');
+let suppliedTarball;
+if (tarballIndex !== -1) {
+  assert.ok(args[tarballIndex + 1] && !args[tarballIndex + 1].startsWith('--'), '--tarball requires an archive path');
+  suppliedTarball = resolve(args[tarballIndex + 1]);
+  args.splice(tarballIndex, 2);
+}
+const registryIndex = args.indexOf('--registry');
+const registry = registryIndex !== -1;
+if (registry) args.splice(registryIndex, 1);
+assert.ok(!(registry && suppliedTarball), 'Choose --registry or --tarball, not both');
 const blogIndex = args.indexOf('--blog');
 let blog;
 if (blogIndex !== -1) {
@@ -42,13 +55,26 @@ async function run(command, parameters, cwd, extra = {}, success = true) {
 }
 
 console.log(`Isolated package consumers: ${work}`);
-// npm pack runs prepack: test the files a registry consumer would actually receive.
-const packed = await run('npm', ['pack', '--json', '--pack-dest', work], repo);
-// Lifecycle output can precede npm's JSON array.
-const manifest = JSON.parse(packed.stdout.slice(packed.stdout.indexOf('[\n')))[0];
 const expected = ['LICENSE', 'README.md', 'package.json', ...['asset-rendering', 'craft-client', 'images', 'index', 'loader', 'normalize'].flatMap(name => [`dist/${name}.js`, `dist/${name}.d.ts`])].sort();
+let manifest;
+let tarball = suppliedTarball;
+if (tarball) {
+  // Validate and install these exact bytes, without repacking or rebuilding.
+  const listing = await run('tar', ['-tzf', tarball], repo);
+  manifest = {
+    filename: basename(tarball),
+    integrity: `sha512-${createHash('sha512').update(readFileSync(tarball)).digest('base64')}`,
+    files: listing.stdout.trim().split('\n').map(path => ({ path: path.replace(/^package\//, '') })),
+  };
+} else {
+  // A local pack runs prepack. Registry verification downloads the published artifact.
+  const parameters = ['pack', ...(registry ? [`${metadata.name}@${metadata.version}`, '--ignore-scripts'] : []), '--json', '--pack-dest', work];
+  const packed = await run('npm', parameters, repo);
+  manifest = JSON.parse(packed.stdout.slice(packed.stdout.indexOf('[\n')))[0];
+  tarball = join(work, manifest.filename);
+}
 assert.deepEqual(manifest.files.map(file => file.path).sort(), expected, 'Unexpected tarball file set');
-const tarball = join(work, manifest.filename);
+console.log(`Verified artifact: ${tarball}`);
 const results = [];
 const { default: sharp } = await import('sharp');
 const nativeBytes = await sharp({ create: { width: 320, height: 180, channels: 3, background: '#aabbcc' } }).png().toBuffer();
@@ -109,8 +135,11 @@ for (const version of versions) {
   const packageMetadata = JSON.parse(readFileSync(join(installed, 'package.json'), 'utf8'));
   assert.equal(packageMetadata.name, 'astro-loader-craft-do');
   assert.equal(packageMetadata.license, 'MIT');
-  assert.equal(packageMetadata.private, true);
-  assert.equal(packageMetadata.version, '0.0.0');
+  assert.notEqual(packageMetadata.private, true);
+  assert.equal(packageMetadata.version, metadata.version);
+  assert.deepEqual(packageMetadata.engines, metadata.engines);
+  assert.deepEqual(packageMetadata.publishConfig, metadata.publishConfig);
+  assert.deepEqual(packageMetadata.repository, metadata.repository);
   assert.equal(packageMetadata.peerDependencies.astro, verifiedVersions.join(' || '));
   assert.deepEqual(packageMetadata.exports, { '.': { types: './dist/index.d.ts', import: './dist/index.js' } });
   assert.deepEqual(packageMetadata.files, ['dist']);
@@ -192,5 +221,5 @@ for (const version of versions) {
   results.push({ astro: version, node: process.version, passed: true, bodyFrontmatterVisible, blogRenderer: version === blogVersion });
   console.log(`PASS Astro ${version}: exports, shipped files, declarations, schema inference/defaults, rendering, five invalid builds, frontmatter, stale removal`);
 }
-writeFileSync(join(work, 'results.json'), JSON.stringify({ tarball: manifest.filename, integrity: manifest.integrity, files: expected, results }, null, 2));
+writeFileSync(join(work, 'results.json'), JSON.stringify({ tarball, source: registry ? 'registry' : 'local', integrity: manifest.integrity, files: expected, results }, null, 2));
 console.log(`PASS package matrix (${results.length} versions). Evidence: ${join(work, 'results.json')}`);
