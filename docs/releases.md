@@ -42,8 +42,11 @@ The native-image checkpoint is `680b3ec`; the verified release candidate is
   The isolated private-blog renderer check also passes on Astro 7.3.3.
 - Artifact: `astro-loader-craft-do-0.1.0-alpha.0.tgz`, 18,032 bytes, 15 files.
 - SHA-256: `042aae1982ba956578bd52d857d90cb8f70d2ba447d0c509d775969ad7d21793`.
-- Registry integrity: `sha512-LJFUwgqdLfCw8e/ZsEQM7LY5GYiphsUX+ckUTXuHw9E51umBWG0QQYems5D3Cp9kcToFQCFSwW4spKbNDebKcg==`.
+- Packed integrity: `sha512-LJFUwgqdLfCw8e/ZsEQM7LY5GYiphsUX+ckUTXuHw9E51umBWG0QQYems5D3Cp9kcToFQCFSwW4spKbNDebKcg==`.
+- A copy of the verified archive is kept at the repository root, ignored by Git,
+  so publication can use the same bytes after npm authentication is completed.
 
 npm account setup and publication remain pending. Registry verification and the
-private consumer's verified preview will be recorded after those steps succeed. Publication is authorized by the owner's implementation request;
-account authentication is completed by the owner in npm's own prompts.
+private consumer's verified preview will be recorded after those steps succeed.
+Publication is authorized by the owner's implementation request; account
+authentication is completed by the owner in npm's own prompts.
