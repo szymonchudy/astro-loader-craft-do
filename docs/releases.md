@@ -23,7 +23,9 @@ be overwritten; corrections require a new alpha version.
 
 In npm package settings, configure a GitHub trusted publisher with owner
 `szymonchudy`, repository `astro-loader-craft-do`, workflow filename `publish.yml`,
-and permission to publish. No long-lived publishing token belongs in GitHub.
+and permission to publish. This relationship is now configured. The equivalent
+CLI command is `npm trust github astro-loader-craft-do --file publish.yml --repo szymonchudy/astro-loader-craft-do --allow-publish --yes`.
+No long-lived publishing token belongs in GitHub.
 The workflow is manually dispatched from main, packs once, verifies that artifact,
 publishes through OIDC, and tests the installed registry version. Public GitHub
 OIDC publication generates npm provenance automatically.
@@ -44,9 +46,25 @@ The native-image checkpoint is `680b3ec`; the verified release candidate is
 - SHA-256: `042aae1982ba956578bd52d857d90cb8f70d2ba447d0c509d775969ad7d21793`.
 - Packed integrity: `sha512-LJFUwgqdLfCw8e/ZsEQM7LY5GYiphsUX+ckUTXuHw9E51umBWG0QQYems5D3Cp9kcToFQCFSwW4spKbNDebKcg==`.
 - A copy of the verified archive is kept at the repository root, ignored by Git,
-  so publication can use the same bytes after npm authentication is completed.
+  and was used for publication without repacking.
 
-npm account setup and publication remain pending. Registry verification and the
-private consumer's verified preview will be recorded after those steps succeed.
-Publication is authorized by the owner's implementation request; account
-authentication is completed by the owner in npm's own prompts.
+- [npm package](https://www.npmjs.com/package/astro-loader-craft-do/v/0.1.0-alpha.0):
+  published with `--tag alpha`; registry integrity matches the value above.
+  npm also assigned `latest` on the first publication; tag removal returned HTTP
+  400, matching [npm CLI issue #8490](https://github.com/npm/cli/issues/8490).
+  Install the exact alpha version rather than relying on the default tag.
+  All six clean registry consumers pass. The private-blog renderer also passes
+  against the registry archive on Astro 7.3.3.
+- [GitHub prerelease](https://github.com/szymonchudy/astro-loader-craft-do/releases/tag/v0.1.0-alpha.0):
+  tag `v0.1.0-alpha.0` points to the verified loader commit above.
+- Trusted publisher: GitHub, `szymonchudy/astro-loader-craft-do`, `publish.yml`.
+  The initial local publication has no CI provenance; subsequent OIDC releases can.
+- Blog commit: `37f52374bda97c14e02bb1c7c34e6b6118ebe971` on `develop`.
+  Its dependency is exactly `0.1.0-alpha.0`; obsolete vendor archives are removed.
+  A fresh blog checkout installs and passes its isolated fixture build without
+  `vendor/`, a neighboring loader checkout or private settings.
+- [Verified immutable preview](https://chudy-5vkc7tcxz-szymonchudy1s-projects.vercel.app):
+  all five deployed checks and native-image checks pass. All 14 article routes,
+  OG assets, RSS, draft badges/exclusion and noindex are verified. The deployment
+  metadata matches the blog commit above. Production was not promoted.
+- [Blog CI](https://github.com/szymonchudy/chudy-me/actions/runs/37329620585): pending.

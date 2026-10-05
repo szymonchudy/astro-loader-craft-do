@@ -9,14 +9,17 @@ registers them with Astro assets, and exposes image metadata and an optional ima
 renderer. See [native-image contract](native-images.md). The consumer owns featured
 image selection, layout, responsive widths and delivery quality. Complete content
 and media snapshots are staged before replacing the content store.
-Alpha release candidate 0.1.0-alpha.0 is prepared locally and remains unpublished.
+Alpha 0.1.0-alpha.0 is published on npm and has a matching GitHub prerelease.
 The approved runtime policy supports Node 24 and 26; the existing exact Astro
 peer versions remain unchanged. Linux release validation passes in both Node CI jobs.
-The public GitHub repository is created and pushed. npm publication and the
-GitHub prerelease remain pending; no beta stability commitment was made.
-The owner has now authorized preparing and publishing 0.1.0-alpha.0 under the
-alpha tag, supporting Node 24 and 26, then adopting it in the private blog and
-verifying a Vercel preview. Account setup is still pending. Release validation passed.
+The public GitHub repository is created and pushed. Registry consumers pass all
+six Astro versions, including the private blog renderer on Astro 7.3.3.
+GitHub trusted publishing is configured for `publish.yml`; this initial local
+publication has no CI provenance. No beta stability commitment was made.
+The private blog now pins the npm alpha. A fresh checkout works without a vendor
+archive or neighboring loader repo. Its final Vercel preview passes article,
+native-image, RSS, OG, draft and noindex checks. See [release evidence](releases.md).
+Final private-blog GitHub CI is still running; production promotion is separate.
 
 Owner preference: complete coherent milestones autonomously, preserve owner edits,
 keep updates concise, and ask only for consequential choices or genuine blockers.
@@ -126,8 +129,9 @@ before beta. The approved alpha preserves the current experimental API.
 Earlier local commits: 46fc950 (setup), 4fa9927 (client), 7edf6c9 (working loader
 and package validation). Checkpoint 680b3ec records native images, media resilience, and normalization fixes.
 Release candidate d84698b passes Linux CI on both runtimes and local exact-artifact
-validation. See [release evidence](releases.md). npm account setup and publication
-remain pending.
+validation. See [release evidence](releases.md). npm publication and the matching
+GitHub prerelease are complete; the registry archive matches the tested bytes.
 The public repository is https://github.com/szymonchudy/astro-loader-craft-do.
-No npm publication or GitHub release has occurred yet. The owner authorized both
-as part of this alpha milestone; authentication remains the next prerequisite.
+Tag `v0.1.0-alpha.0` points to d84698b. The downstream blog's develop commit is
+`37f52374bda97c14e02bb1c7c34e6b6118ebe971`; its immutable preview is recorded in
+the release notes. No production promotion occurred.
