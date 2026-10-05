@@ -11,11 +11,12 @@ image selection, layout, responsive widths and delivery quality. Complete conten
 and media snapshots are staged before replacing the content store.
 Alpha release candidate 0.1.0-alpha.0 is prepared locally and remains unpublished.
 The approved runtime policy supports Node 24 and 26; the existing exact Astro
-peer versions remain unchanged. Linux release validation is pending public CI.
-No beta compatibility commitment, push, publication, or release occurred.
+peer versions remain unchanged. Linux release validation passes in both Node CI jobs.
+The public GitHub repository is created and pushed. npm publication and the
+GitHub prerelease remain pending; no beta stability commitment was made.
 The owner has now authorized preparing and publishing 0.1.0-alpha.0 under the
 alpha tag, supporting Node 24 and 26, then adopting it in the private blog and
-verifying a Vercel preview. Account setup and release validation are still pending.
+verifying a Vercel preview. Account setup is still pending. Release validation passed.
 
 Owner preference: complete coherent milestones autonomously, preserve owner edits,
 keep updates concise, and ask only for consequential choices or genuine blockers.
@@ -101,8 +102,8 @@ The live sample environment and its Collection selection remain unchanged.
 - pnpm test:package --blog /path/to/chudy-me: same matrix plus
   the actual blog renderer. Prints tarball, results, and consumer artifact paths.
 - Matrix runtime: Node 26.10.0, TypeScript 6.0.3, @astrojs/check 0.9.10, macOS arm64.
-  Node 24 and 26 are the approved alpha runtimes. Linux verification is pending CI;
-  the recorded matrix remains macOS arm64 evidence.
+  Node 24 and 26 are the approved alpha runtimes. Public Linux CI passes both
+  runtimes and the six-version matrix; local macOS evidence is also retained.
 - pnpm example:build / example:preview / dev remain the live sample workflow using
   ignored root .env.local. Earlier live checks verified three entries and the native
   toggle in the browser; no live refetch was needed for package validation.
@@ -124,8 +125,9 @@ before beta. The approved alpha preserves the current experimental API.
 
 Earlier local commits: 46fc950 (setup), 4fa9927 (client), 7edf6c9 (working loader
 and package validation). Checkpoint 680b3ec records native images, media resilience, and normalization fixes.
-Release metadata, public CI, exact-artifact verification, and publishing guidance
-are now prepared. npm account setup, public CI, and publication remain pending.
-No push, package publication, or release occurred. Repository publication was
-previously authorized but remains outside this milestone; recheck availability
-before any future external action.
+Release candidate d84698b passes Linux CI on both runtimes and local exact-artifact
+validation. See [release evidence](releases.md). npm account setup and publication
+remain pending.
+The public repository is https://github.com/szymonchudy/astro-loader-craft-do.
+No npm publication or GitHub release has occurred yet. The owner authorized both
+as part of this alpha milestone; authentication remains the next prerequisite.

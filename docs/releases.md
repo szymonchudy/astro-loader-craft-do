@@ -33,7 +33,17 @@ until a separate beta decision. See [npm trusted publishing](https://docs.npmjs.
 
 ## First release evidence
 
-The native-image checkpoint is `680b3ec`. The release commit, CI run, artifact
-integrity, registry verification, and downstream preview are recorded after each
-step succeeds. Publication is authorized by the owner's implementation request;
+The native-image checkpoint is `680b3ec`; the verified release candidate is
+`d84698be5ab1618f6ef427154d9cfa4b23ddaa95`.
+
+- [Linux CI](https://github.com/szymonchudy/astro-loader-craft-do/actions/runs/37315371764):
+  Node 24 and 26, 47 portable checks and all six exact Astro consumers pass.
+- Local exact-artifact matrix: all six Astro versions pass on Node 26/macOS arm64.
+  The isolated private-blog renderer check also passes on Astro 7.3.3.
+- Artifact: `astro-loader-craft-do-0.1.0-alpha.0.tgz`, 18,032 bytes, 15 files.
+- SHA-256: `042aae1982ba956578bd52d857d90cb8f70d2ba447d0c509d775969ad7d21793`.
+- Registry integrity: `sha512-LJFUwgqdLfCw8e/ZsEQM7LY5GYiphsUX+ckUTXuHw9E51umBWG0QQYems5D3Cp9kcToFQCFSwW4spKbNDebKcg==`.
+
+npm account setup and publication remain pending. Registry verification and the
+private consumer's verified preview will be recorded after those steps succeed. Publication is authorized by the owner's implementation request;
 account authentication is completed by the owner in npm's own prompts.
