@@ -39,7 +39,7 @@ queries; reuse this matrix without assuming they remain the latest releases.
 | 7.3.3 | Pass | Stripped by Astro | Pass, Sätteri 0.4.1 |
 | 7.3.5 | Pass | Stripped by Astro | Not applicable |
 
-7.3.3 was read from `/Users/szymonchudy/Personal/chudy-me/node_modules/astro/package.json`,
+7.3.3 was read from `/path/to/chudy-me/node_modules/astro/package.json`,
 not inferred from its manifest range. The optional blog run requires that installed
 version in the matrix. It copies only the actual callout plugin into the temporary
 consumer and installs the blog's exact Sätteri version from npm. The loader is still
@@ -57,7 +57,7 @@ animation, styling, MDX, or migration.
   link. Consumer imports use only `astro-loader-craft-do` and its emitted exports.
 - Plain Node imports expose only `craftCollection`. Internal subpaths, source
   paths, and package.json imports fail with ERR_PACKAGE_PATH_NOT_EXPORTED. Metadata
-  checks require the intended export/declaration paths, MIT, private 0.0.0,
+  checks require the intended export/declaration paths, MIT, the candidate version and public alpha metadata,
   exact Astro peers, and Sharp as the sole runtime dependency.
 - Consumer-authored Zod schemas infer precise status unions, optional descriptions,
   and defaulted string arrays. `astro check` verifies exact type equality (including
@@ -88,7 +88,9 @@ platforms, or TypeScript versions from these runs. The package delegates Markdow
 to Astro, so equivalent HTML can differ in attribute serialization and whitespace.
 No separate renderer or cross-version compatibility branch was needed.
 
-This artifact is suitable for local consumer testing, not a release approval.
+The historical matrix above establishes the development checkpoint. The approved
+alpha release reruns this matrix on Node 24 and 26/Linux through public CI and
+verifies the exact release artifact before publication.
 Beta API review, runtime policy, CI/release hygiene,
 internal routes, exhaustive Craft coverage, and large-Collection behavior remain
 separate work. Full blog migration is outside this milestone.

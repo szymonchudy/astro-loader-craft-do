@@ -19,7 +19,7 @@ Reproduce:
 ```sh
 pnpm test
 pnpm typecheck
-node scripts/verify-package.mjs 7.3.3 --blog /Users/szymonchudy/Personal/chudy-me
+node scripts/verify-package.mjs 7.3.3 --blog /path/to/chudy-me
 ```
 
 Runtime: Node 26.10.0, TypeScript 6.0.3, Astro 7.3.3, Sätteri adapter 0.4.1 on

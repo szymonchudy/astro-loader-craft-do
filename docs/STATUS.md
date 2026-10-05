@@ -9,7 +9,9 @@ registers them with Astro assets, and exposes image metadata and an optional ima
 renderer. See [native-image contract](native-images.md). The consumer owns featured
 image selection, layout, responsive widths and delivery quality. Complete content
 and media snapshots are staged before replacing the content store.
-The package remains experimental, private, version 0.0.0, and unpublished.
+Alpha release candidate 0.1.0-alpha.0 is prepared locally and remains unpublished.
+The approved runtime policy supports Node 24 and 26; the existing exact Astro
+peer versions remain unchanged. Linux release validation is pending public CI.
 No beta compatibility commitment, push, publication, or release occurred.
 The owner has now authorized preparing and publishing 0.1.0-alpha.0 under the
 alpha tag, supporting Node 24 and 26, then adopting it in the private blog and
@@ -96,10 +98,11 @@ The live sample environment and its Collection selection remain unchanged.
 - pnpm test: 47 portable checks; no credentials or live API requests.
 - pnpm typecheck and git diff --check: package types and patch whitespace.
 - pnpm test:package: six clean temporary consumers; requires npm registry access.
-- pnpm test:package --blog /Users/szymonchudy/Personal/chudy-me: same matrix plus
+- pnpm test:package --blog /path/to/chudy-me: same matrix plus
   the actual blog renderer. Prints tarball, results, and consumer artifact paths.
 - Matrix runtime: Node 26.10.0, TypeScript 6.0.3, @astrojs/check 0.9.10, macOS arm64.
-  Broader Node/platform policy remains beta planning, not inferred support.
+  Node 24 and 26 are the approved alpha runtimes. Linux verification is pending CI;
+  the recorded matrix remains macOS arm64 evidence.
 - pnpm example:build / example:preview / dev remain the live sample workflow using
   ignored root .env.local. Earlier live checks verified three entries and the native
   toggle in the browser; no live refetch was needed for package validation.
@@ -113,16 +116,16 @@ The live sample environment and its Collection selection remain unchanged.
 Inspect this completed package checkpoint before beginning another milestone.
 The native media and chudy.me image migration are part of this checkpoint.
 Internal route mapping, exhaustive Craft block/property coverage,
-large Collections/rate limits, and beta/release
-hygiene remain separate work. The example may later become a starter.
+large Collections/rate limits, and beta hygiene remain separate work. The example may later become a starter.
 Public API and longer-term compatibility/runtime commitments need owner review
 before beta. The approved alpha preserves the current experimental API.
 
 ## Git and external state
 
 Earlier local commits: 46fc950 (setup), 4fa9927 (client), 7edf6c9 (working loader
-and package validation). The next checkpoint records native images, media
-resilience, and normalization fixes; inspect git log for its commit ID.
+and package validation). Checkpoint 680b3ec records native images, media resilience, and normalization fixes.
+Release metadata, public CI, exact-artifact verification, and publishing guidance
+are now prepared. npm account setup, public CI, and publication remain pending.
 No push, package publication, or release occurred. Repository publication was
 previously authorized but remains outside this milestone; recheck availability
 before any future external action.

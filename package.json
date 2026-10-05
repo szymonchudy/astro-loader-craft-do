@@ -1,8 +1,17 @@
 {
   "name": "astro-loader-craft-do",
-  "version": "0.0.0",
-  "private": true,
-  "description": "Use Craft.do Collections as Astro Content Collections (experimental development).",
+  "version": "0.1.0-alpha.0",
+  "description": "Use Craft.do Collections as Astro Content Collections (experimental alpha).",
+  "author": "Szymon Chudy",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/szymonchudy/astro-loader-craft-do.git"
+  },
+  "homepage": "https://github.com/szymonchudy/astro-loader-craft-do#readme",
+  "bugs": "https://github.com/szymonchudy/astro-loader-craft-do/issues",
+  "keywords": ["astro", "astro-loader", "craft", "craft-do", "content-collections"],
+  "engines": { "node": "^24.0.0 || ^26.0.0" },
+  "publishConfig": { "access": "public", "tag": "alpha", "registry": "https://registry.npmjs.org/" },
   "license": "MIT",
   "type": "module",
   "packageManager": "pnpm@12.8.1",

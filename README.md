@@ -6,19 +6,33 @@ This integrates with **Craft Docs / craft.do**, not Craft CMS.
 
 ## Project status
 
-Early experimental development. Szymon Chudy is building this first personally
+Experimental alpha. Szymon Chudy is building this first personally
 owned OSS package to use Craft as an Astro content source and learn the full
-package maintenance lifecycle. The API is evolving; no package has been
-published. The initial plan leads to beta, followed by dogfooding and external
-validation before considering stability.
+package maintenance lifecycle. The API is evolving and may change between alpha
+releases. Dogfooding and external feedback will inform beta and eventual stability.
 
 The first working loader now renders the dedicated three-item Craft sample in
 a fresh Astro consumer. The package exports `craftCollection` and its options
 type. The nested `properties` layout is implemented experimentally and remains
 subject to API review before beta. Clean npm-tarball consumers pass on Astro
-5.9.0, 5.18.2, 6.0.0, 6.4.8, 7.3.3, and 7.3.5 with Node 26.10.0 and TypeScript
-6.0.3. The peer dependency admits exactly these verified versions; other versions
-are unverified. This is experimental compatibility evidence, not a beta promise.
+5.9.0, 5.18.2, 6.0.0, 6.4.8, 7.3.3, and 7.3.5. The peer dependency admits exactly
+these versions; other Astro versions are unverified. Node 24 and 26 are supported.
+CI validates synthetic consumers on Linux; local checks also cover macOS arm64.
+This is experimental compatibility evidence, not a beta promise.
+
+## Install the alpha
+
+```sh
+npm install --save-exact astro-loader-craft-do@0.1.0-alpha.0
+# or
+pnpm add --save-exact astro-loader-craft-do@0.1.0-alpha.0
+```
+
+The `alpha` tag tracks experimental releases. Pin an exact version when dogfooding.
+Set up a Craft selected-documents API connection with access to your Collection,
+then supply its URL, API key, and Collection ID through server/build environment
+variables. Keep credentials out of client-side code. The library never loads env
+files itself. See the [sample setup](https://github.com/szymonchudy/astro-loader-craft-do/blob/main/docs/sample-collection.md).
 
 ## Try the checkpoint
 
@@ -33,7 +47,7 @@ pnpm dev
 
 The tests verify schema-inferred types, rendering through `getCollection()` and
 `render()`, explicit schema defaults, and build failure for malformed synthetic
-data. No credentials are required. See [the example](examples/basic/README.md).
+data. No credentials are required. See [the example](https://github.com/szymonchudy/astro-loader-craft-do/blob/main/examples/basic/README.md).
 For live example commands, configure the root's ignored `.env.local` using
 `.env.example` and your dedicated sample connection. The package receives
 settings explicitly; it does not load environment variables itself.
@@ -41,7 +55,7 @@ settings explicitly; it does not load environment variables itself.
 `pnpm test:package` needs npm registry access. It runs `npm pack`, checks the exact
 shipped file list, and installs that tarball into six temporary Astro consumers
 with their own dependencies. These checks use no workspace links or package-source
-imports. See [package validation](docs/research/package-validation.md) for evidence,
+imports. See [package validation](https://github.com/szymonchudy/astro-loader-craft-do/blob/main/docs/research/package-validation.md) for evidence,
 reproduction, and the optional isolated blog-renderer check.
 
 ## Experimental consumer API
@@ -151,11 +165,11 @@ caption rendering and responsive sizes remain consumer choices.
 This separates four steps: Craft stores the authored image; sync downloads it;
 Astro bundles the local asset; the configured image service/CDN creates visitor
 variants. A signed Craft URL is not a production asset. See the
-[native image contract](docs/native-images.md).
+[native image contract](https://github.com/szymonchudy/astro-loader-craft-do/blob/main/docs/native-images.md).
 
-See the [normalization contract](docs/normalization.md) for callback inputs,
+See the [normalization contract](https://github.com/szymonchudy/astro-loader-craft-do/blob/main/docs/normalization.md) for callback inputs,
 nesting, code protection, summary-label behavior, and supported syntax. The
-[blog adapter fixture](scripts/fixtures/blog-renderers.mjs) shows consumer-owned
+[blog adapter fixture](https://github.com/szymonchudy/astro-loader-craft-do/blob/main/scripts/fixtures/blog-renderers.mjs) shows consumer-owned
 insights and styled details; those conventions are not baked into the package.
 
 ## Current limits
@@ -170,8 +184,8 @@ the consumer schema without conversion; exhaustive property-type support is
 not established. Large-Collection behavior, API-read retries, incremental fetching,
 and exhaustive Craft coverage remain pending. Leading frontmatter-like body text
 is rendered on the tested Astro 5 versions and stripped by Astro 6/7; body
-frontmatter does not replace validated Collection metadata. A broader Node support
-policy remains part of beta planning; this matrix used Node 26.10.0.
+frontmatter does not replace validated Collection metadata. Node versions outside
+24 and 26 and platforms beyond the recorded checks are unverified.
 
 ## Repository guide
 
