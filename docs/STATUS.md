@@ -1,6 +1,20 @@
 # Project status
 
-Updated: 2026-10-06
+Updated: 2026-10-09
+
+## Production-readiness alpha candidate
+
+The owner-approved package hardening is implemented in the isolated
+`codex/production-readiness` worktree, preserving the existing separator API and
+consumer schema behavior. Candidate version: `0.1.0-alpha.1`; Sharp: `0.35.5`.
+See [bounded complete sync](decisions/009-bounded-complete-sync.md) for the fixed
+internal limits, deadlines/retries, empty-body/root validation, reserved-wrapper
+fix, all-frame GIF/WebP validation and temporary-cache cleanup.
+
+Synthetic regressions reproduced the content defects before the fixes. All 66 portable checks pass, including the real Astro example consumer;
+`pnpm typecheck` and `git diff --check` also pass. The packed six-version matrix
+remains the next release check; publication has not occurred at this checkpoint. The alpha.0 evidence below
+is historical and must not be read as alpha.1 release validation.
 
 ## Current checkpoint
 
@@ -101,7 +115,7 @@ The live sample environment and its Collection selection remain unchanged.
   bytes and atomically cached. Fresh signatures reuse identical content; changed
   bytes create a new asset. Pagination, nested block traversal and incomplete or
   corrupt media fail before snapshot replacement. Sharp is the runtime dependency.
-- npm pack builds through prepack. The tarball contains exactly 15 intended files:
+- npm pack builds through prepack. The alpha.0 tarball contained exactly 15 intended files:
   emitted JS/declarations, package metadata, README, and license. Clean npm consumers
   have no workspace links or package-source imports; internal exports are closed.
 - Exact Astro peers: 5.9.0, 5.18.2, 6.0.0, 6.4.8, 7.3.3, 7.3.5. Every version passes

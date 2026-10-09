@@ -135,8 +135,9 @@ Craft export engine. Attributed callout/caption wrappers outside those forms fai
 explicitly. Malformed structural wrappers, truncated previews, and excessive
 nesting also fail instead of silently discarding content. Unknown ordinary HTML
 is preserved. Comments, math, and other unrelated Markdown extensions are left to
-the configured Astro processor. Images and Craft links keep their URLs: downloading
-media and mapping internal links to site routes remain separate work.
+the configured Astro processor. Native images are downloaded and validated under the [image contract](native-images.md).
+Other image links and internal Craft links keep their URLs; mapping internal
+links to site routes remains separate work.
 
 
 ## Fences at inline wrapper boundaries
@@ -148,3 +149,9 @@ and gives the renderer the complete original fenced Markdown. Backtick and tilde
 fences are covered, including literal wrapper/highlight tags within the code.
 Shorter or mismatched closing fences do not close the enclosing Craft wrapper.
 This behavior is reproduced with invented content in `test/normalize.test.mjs`.
+
+Empty and metadata-only successful exports are accepted only when structured
+descendants do not demonstrate content. This check runs before callbacks can
+intentionally omit content. The optional separator renderer cannot bypass
+reserved Craft wrapper validation through generic HTML handling. See the
+[bounded-sync policy](decisions/009-bounded-complete-sync.md).

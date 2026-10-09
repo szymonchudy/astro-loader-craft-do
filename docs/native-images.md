@@ -29,11 +29,13 @@ origins are accepted, with redirects disabled and a timeout. A complete supporte
 JPEG/PNG/WebP/AVIF/GIF raster decode must succeed. Files keep the downloaded bytes,
 use a SHA-256 filename, and deduplicate identical content. Craft may re-encode an
 upload before the loader sees it; the loader does not re-encode the download.
-Temporary HTTP 500/502/503/504 responses and transport failures get at most three
-attempts with short backoff, sharing one 30-second download deadline. Permanent
-HTTP errors and corrupt raster data fail immediately. Retries use the current
-sync's media URL and never fall back to older image bytes or hide an exhausted
-failure. This policy applies to media downloads, not Collection/block API reads.
+API reads and media downloads retry temporary HTTP 408/429/500/502/503/504 and
+transport/body interruptions at most three times within shared deadlines.
+Permanent errors, malformed successful responses and invalid raster data fail
+immediately. Animated GIF/WebP validation decodes every frame. Fixed limits bound
+bytes, frames, pixels, entries, blocks, pagination and whole-sync duration; see
+[the bounded-sync policy](decisions/009-bounded-complete-sync.md).
+Retries use the current sync's media URL and never fall back to older image bytes.
 Each sync refreshes the source rather than trusting an expired URL or an old
 cached response. Changes to bytes, alt text or captions affect the entry digest.
 
@@ -53,7 +55,7 @@ The six exact advertised Astro versions pass clean tarball builds with native
 images, rich captions, literal alt punctuation and local asset delivery. Tests
 also cover refreshed signatures, changed bytes, complete decode failure, cache
 preservation, renderer omission, code-literal protection and nested pagination.
-Large Collections, API-read retries and cache pruning remain separate work.
+Cache pruning and support beyond the documented safety limits remain separate work.
 
 Sources: [Craft API](https://connect.craft.do/api-docs/documents/) and
 [Astro loader reference](https://docs.astro.build/en/reference/content-loader-reference/).
