@@ -55,7 +55,7 @@ async function run(command, parameters, cwd, extra = {}, success = true) {
 }
 
 console.log(`Isolated package consumers: ${work}`);
-const expected = ['LICENSE', 'README.md', 'package.json', ...['asset-rendering', 'craft-client', 'images', 'index', 'loader', 'normalize'].flatMap(name => [`dist/${name}.js`, `dist/${name}.d.ts`])].sort();
+const expected = ['LICENSE', 'README.md', 'package.json', ...['asset-rendering', 'budget', 'craft-client', 'images', 'index', 'loader', 'normalize', 'transport'].flatMap(name => [`dist/${name}.js`, `dist/${name}.d.ts`])].sort();
 let manifest;
 let tarball = suppliedTarball;
 if (tarball) {

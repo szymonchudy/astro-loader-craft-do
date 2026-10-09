@@ -33,6 +33,32 @@ OIDC publication generates npm provenance automatically.
 Update the package version and changelog before dispatching. Keep the alpha tag
 until a separate beta decision. See [npm trusted publishing](https://docs.npmjs.com/trusted-publishers/).
 
+## Alpha.1 candidate and controlled publication
+
+The owner approved `0.1.0-alpha.1` and advancing both the `alpha` and existing
+`latest` tags. This remains an experimental alpha; default installation does not
+create a stable API commitment.
+
+Dispatch `publish.yml` from main with `expected_sha` set to the complete reviewed
+main commit and `expected_version` set to `0.1.0-alpha.1`. The workflow rejects a
+superseded candidate, packs once, retains the archive/checksum artifact, validates
+those same bytes on Node 24 and 26 against every advertised Astro version, then
+publishes through the configured trusted publisher. Registry integrity and OIDC
+provenance are checked after publication. The maintainer advances `latest` only
+after those checks; publishing uses the `alpha` tag.
+
+Local Node 24.21.0 validation passes all six clean exact-version consumers,
+including the actual blog renderer on Astro 7.3.3. An isolated live blog build
+using the candidate archive passes all 12 published articles, native media,
+metadata, RSS, sitemap and internal links. No private Craft data is included in
+the package or public release evidence. Linux runtime evidence and registry
+publication remain pending.
+
+The current local candidate contains 19 intended files. SHA-256:
+`1da94dc7736576bdb83053e2560327d08393d59c3256a9c686de17a82800f0de`. Integrity: `sha512-PaQU1W9sS+++crhDELd1D26I0phlYRrFf2W52Dhafp2U3M1G7M5xDg0M/4gDDarmTXEVaF5XbRw+tC0cVJRGiQ==`.
+These identify the local pre-publication artifact; the workflow's independently
+packed artifact must have its own recorded checksum before publication.
+
 ## First release evidence
 
 The native-image checkpoint is `680b3ec`; the verified release candidate is

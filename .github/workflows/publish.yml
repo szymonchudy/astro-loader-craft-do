@@ -1,19 +1,105 @@
 name: Publish alpha
 on:
   workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact reviewed main commit (40-character SHA)
+        required: true
+        type: string
+      expected_version:
+        description: Reviewed alpha version
+        required: true
+        default: 0.1.0-alpha.1
+        type: string
 permissions:
   contents: read
-  id-token: write
 concurrency:
   group: npm-publication
   cancel-in-progress: false
+env:
+  EXPECTED_SHA: ${{ inputs.expected_sha }}
+  EXPECTED_VERSION: ${{ inputs.expected_version }}
 jobs:
-  publish:
+  prepare:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.expected_sha }}
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.8.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Check reviewed identity
+        run: |
+          node --input-type=module - <<'NODE'
+          import assert from 'node:assert/strict';
+          import { readFileSync } from 'node:fs';
+          import { execFileSync } from 'node:child_process';
+          assert.match(process.env.EXPECTED_SHA, /^[a-f0-9]{40}$/);
+          assert.match(process.env.EXPECTED_VERSION, /^0\.1\.0-alpha\.\d+$/);
+          assert.equal(execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(), process.env.EXPECTED_SHA);
+          assert.equal(execFileSync('git', ['ls-remote', 'origin', 'refs/heads/main'], { encoding: 'utf8' }).split(/\s/)[0], process.env.EXPECTED_SHA);
+          assert.equal(JSON.parse(readFileSync('package.json', 'utf8')).version, process.env.EXPECTED_VERSION);
+          NODE
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test
+      - name: Pack once and record checksum
+        run: |
+          mkdir -p /tmp/craft-release
+          npm pack --pack-destination /tmp/craft-release
+          cd /tmp/craft-release
+          sha256sum astro-loader-craft-do-*.tgz > SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: craft-release-${{ inputs.expected_sha }}
+          path: /tmp/craft-release/
+          retention-days: 30
+          if-no-files-found: error
+  validate:
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [24, 26]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.expected_sha }}
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.8.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@v4
+        with:
+          name: craft-release-${{ inputs.expected_sha }}
+          path: /tmp/craft-release
+      - run: cd /tmp/craft-release && sha256sum -c SHA256SUMS
+      - name: Validate every advertised Astro consumer using the same archive
+        run: pnpm test:package --tarball /tmp/craft-release/astro-loader-craft-do-*.tgz
+  publish:
+    needs: [prepare, validate]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.expected_sha }}
       - uses: pnpm/action-setup@v4
         with:
           version: 12.8.1
@@ -23,14 +109,28 @@ jobs:
           registry-url: https://registry.npmjs.org
       - run: npm install --global npm@12.2.0
       - run: pnpm install --frozen-lockfile
-      - run: pnpm typecheck
-      - run: pnpm test
-      - name: Pack once
-        run: |
-          mkdir -p /tmp/craft-release
-          npm pack --pack-destination /tmp/craft-release
-      - name: Validate release artifact
-        run: pnpm test:package --tarball /tmp/craft-release/astro-loader-craft-do-*.tgz
-      - name: Publish through configured npm trusted publisher
+      - name: Reject a superseded candidate
+        run: test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$EXPECTED_SHA"
+      - uses: actions/download-artifact@v4
+        with:
+          name: craft-release-${{ inputs.expected_sha }}
+          path: /tmp/craft-release
+      - run: cd /tmp/craft-release && sha256sum -c SHA256SUMS
+      - name: Publish the verified archive through npm trusted publishing
         run: npm publish /tmp/craft-release/astro-loader-craft-do-*.tgz --access public --tag alpha
-      - run: pnpm test:package 7.3.3 --registry
+      - name: Verify published registry consumers and exact integrity
+        run: |
+          pnpm test:package --registry
+          node --input-type=module - <<'NODE'
+          import assert from 'node:assert/strict';
+          import { createHash } from 'node:crypto';
+          import { readFileSync, readdirSync } from 'node:fs';
+          import { execFileSync } from 'node:child_process';
+          const directory = '/tmp/craft-release';
+          const archive = readdirSync(directory).find(name => name.endsWith('.tgz'));
+          const integrity = 'sha512-' + createHash('sha512').update(readFileSync(directory + '/' + archive)).digest('base64');
+          const published = JSON.parse(execFileSync('npm', ['view', 'astro-loader-craft-do@' + process.env.EXPECTED_VERSION, 'dist', '--json'], { encoding: 'utf8' }));
+          assert.equal(published.integrity, integrity);
+          assert.ok(published.attestations?.provenance, 'Trusted publication must have provenance');
+          console.log('Registry bytes and provenance verified; maintainer may advance latest to the reviewed alpha.');
+          NODE
