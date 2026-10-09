@@ -15,10 +15,19 @@ cannot escape validation through the optional separator renderer's HTML handling
 The loader stages the complete collection, then replaces the store only after
 all downloads, validation, normalization, schema parsing and rendering succeed.
 Precommit failures retain the previous collection. If store replacement throws,
-the loader restores every previous entry, including Astro image/import metadata.
+the loader restores every previous entry, including its image/import metadata.
 An underlying store that also persistently rejects restoration is reported explicitly;
 no loader can make that broken backing store writable. Old content-addressed image files
 remain usable; unsuccessful atomic cache writes remove their temporary files.
+
+Astro's generated import inventory is separate from entry metadata. The supported
+Astro 6.4.8, 7.3.3 and 7.3.5 rebuild that inventory from the restored entries.
+Astro 5.9.0, 5.18.2 and 6.0.0 retain an internal append-only asset-import set:
+after a commit-stage failure, all previous entries are restored but unused new
+imports can remain. This is a documented framework limitation, not a claim of
+fully atomic import rollback on those peers. No private Astro API is patched and
+the supported peer list is unchanged. Rebuild with a fresh Astro cache after such
+a failure on those older versions. Precommit failures do not write new imports.
 
 ## Internal resource policy
 
@@ -29,7 +38,8 @@ These are safety limits, not new consumer options:
 | Collection entries | 500 |
 | Received structured blocks across one sync | 25,000 |
 | Continuation pages per individual paginated operation | 100 |
-| Each API response | 8 MiB |
+| All Craft API response bodies across one sync | 8 MiB |
+| Each API response (additional individual cap) | 8 MiB |
 | Retained source Markdown across the sync | 32 MiB |
 | Total normalized Markdown, including callback output | 32 MiB |
 | Each downloaded media file | 32 MiB |
@@ -44,10 +54,16 @@ Reads remain sequential. Response bodies are counted incrementally and canceled
 on overflow. Pagination cannot evade limits using a new cursor each time. Each Collection
 listing and root/subtree traversal gets its own continuation allowance; independent
 operations do not consume one another's allowance. The whole-sync deadline and
-block budget still accumulate across all operations.
+block budget still accumulate across all operations. Collection JSON, structured
+JSON and Markdown share one API byte counter. Every consumed chunk counts before
+it is retained or parsed, including unused JSON fields and partial reads preceding
+a retry. The counter never resets for a page, item, API operation or retry; each
+new sync starts with a fresh allowance. Media reads do not use this API counter.
 All source pages for each item are prevalidated before consumer callbacks run.
 Retained source bytes accumulate across the whole sync under their own 32 MiB
 cap, independently of the 32 MiB cap on final normalized callback output.
+The aggregate API cap is normally reached before the retained-source cap;
+the final-output cap still bounds expansion by consumer renderers.
 
 API and media requests retry transport/body interruptions and HTTP
 408/429/500/502/503/504. Backoff starts at 250 ms then 750 ms. A valid Retry-After

@@ -11,10 +11,19 @@ See [bounded complete sync](decisions/009-bounded-complete-sync.md) for the fixe
 internal limits, deadlines/retries, empty-body/root validation, reserved-wrapper
 fix, all-frame GIF/WebP validation and temporary-cache cleanup.
 
-Synthetic regressions reproduced the content defects before the fixes. All 68 portable checks pass, including the real Astro example consumer;
-`pnpm typecheck` and `git diff --check` also pass. The packed six-version matrix
-remains the next release check; publication has not occurred at this checkpoint. The alpha.0 evidence below
-is historical and must not be read as alpha.1 release validation.
+Final contract review found that the approved 8 MiB API budget was only enforced
+per response. The follow-up now counts all consumed Craft API JSON/Markdown bytes
+across each sync, including interrupted reads before retries; media remains
+separate. Five new regressions failed before the fix. All 32 focused API-budget,
+limits, completeness, readiness and rollback tests pass on Node 24.21.0; TypeScript
+compilation and `git diff --check` pass. The 32 MiB retained-source and normalized
+output caps remain. The older Astro append-only import-inventory limitation is
+documented without changing supported peers or using private framework APIs.
+
+The earlier `0c96398` candidate passed 84 tests and the Node 24/26 six-peer packed
+matrix. This runtime change requires a new archive and repeated full package,
+matrix and live-blog validation before publication; the old archive is no longer
+the release candidate. The alpha.0 evidence below is historical.
 
 ## Current checkpoint
 

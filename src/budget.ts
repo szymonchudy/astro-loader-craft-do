@@ -48,9 +48,10 @@ export function deadline(milliseconds: number, parent?: Deadline): Deadline {
 }
 export function createSyncBudget(milliseconds = limits.syncMs) {
   const time = deadline(milliseconds);
-  let blocks = 0, markdown = 0;
+  let blocks = 0, markdown = 0, apiBytes = 0;
   return {
     time,
+    api(bytes: number) { time.check(); apiBytes += bytes; checkLimit(apiBytes, limits.apiBytes, 'API response bytes across the sync'); },
     block() { time.check(); checkLimit(++blocks, limits.blocks, 'structured block count'); },
     markdown(bytes: number) { time.check(); markdown += bytes; checkLimit(markdown, limits.markdownBytes, 'normalized Markdown size'); },
   };

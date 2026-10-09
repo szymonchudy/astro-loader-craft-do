@@ -192,6 +192,23 @@ insights and styled details; those conventions are not baked into the package.
 
 ## Current limits
 
+Craft API response bodies share an **8 MiB total allowance per sync**, including
+Collection JSON, structured JSON, Markdown, and partial reads before retries.
+Each response also has an 8 MiB cap. Bytes count while streaming, before parsing
+or discarding unused fields. Media uses its separate 32 MiB per-file allowance.
+Retained source Markdown and final normalized Markdown each have a 32 MiB
+per-sync cap; renderer expansion counts toward the final-output cap.
+
+Failures before store replacement preserve the previous entries. If replacement
+throws, the loader restores their complete entry data and metadata unless the
+backing store itself also rejects restoration. Astro 6.4.8, 7.3.3 and 7.3.5 also
+restore the generated asset-import inventory. Astro 5.9.0, 5.18.2 and 6.0.0 keep
+an internal append-only import set, so a failed commit may leave unused imports
+from the rejected snapshot even though all previous entries are restored.
+The loader does not modify private Astro state. Rebuild with a fresh Astro cache
+after such a commit failure on those older versions; full import rollback is
+not guaranteed there. All six exact supported peer versions remain unchanged.
+
 Connection URLs must use HTTPS on `connect.craft.do`. Native image downloads accept
 the observed HTTPS media origins `r.craft.do`, `res.craft.do`, and `res.luki.io`;
 redirects fail closed. Ordinary authored remote Markdown images and Craft links

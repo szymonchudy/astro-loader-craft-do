@@ -5,7 +5,7 @@ const transient = new Set([408, 429, 500, 502, 503, 504]);
 function cancel(body: ReadableStream<Uint8Array> | null): void {
   if (body) void body.cancel().catch(() => {});
 }
-async function readBytes(response: Response, maximum: number, time: Deadline): Promise<Buffer> {
+async function readBytes(response: Response, maximum: number, time: Deadline, onBytes?: (bytes: number) => void): Promise<Buffer> {
   const length = response.headers.get('content-length');
   if (length && /^\d+$/.test(length)) {
     try { checkLimit(Number(length), maximum, 'response size'); }
@@ -21,6 +21,8 @@ async function readBytes(response: Response, maximum: number, time: Deadline): P
       if (done) return Buffer.concat(chunks, size);
       size += value.byteLength;
       checkLimit(size, maximum, 'response size');
+      // Shared accounting happens before retention and is never refunded on retry.
+      onBytes?.(value.byteLength);
       chunks.push(value);
     }
   } catch (error) {
@@ -38,6 +40,7 @@ function retryAfter(response: Response): number {
 /** Retries only transport interruptions and explicitly temporary HTTP responses. */
 export async function requestBytes(url: URL, request: typeof fetch, options: {
   init?: RequestInit; maximum: number; milliseconds: number; parent?: Deadline;
+  onBytes?: (bytes: number) => void;
   failure: string; httpError(status: number): Error;
 }): Promise<Buffer> {
   const time = deadline(options.milliseconds, options.parent);
@@ -59,7 +62,7 @@ export async function requestBytes(url: URL, request: typeof fetch, options: {
           if (!transient.has(response.status)) throw failure;
           backoff = Math.max(backoff, retryAfter(response));
         } else {
-          try { return await readBytes(response, options.maximum, time); }
+          try { return await readBytes(response, options.maximum, time, options.onBytes); }
           catch (error) {
             if (error instanceof LimitError) throw error;
             failure = new Error(options.failure);

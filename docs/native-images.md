@@ -44,6 +44,10 @@ Astro's store. Download, decode, schema, renderer or Markdown failures preserve
 all previous entries. Existing content-addressed files are retained; automatic
 cache pruning is intentionally absent. Clearing Astro's cache requires a sync
 before the next build. Publication and serving never require Craft credentials.
+If store replacement itself fails, entry restoration is attempted. Astro 5.9.0,
+5.18.2 and 6.0.0 may retain unused imports in their private append-only inventory;
+the newer supported peers restore that inventory too. See the
+[rollback limitation](decisions/009-bounded-complete-sync.md).
 
 `renderers.image` is synchronous and receives `CraftImage` plus default figure
 `markdown`. `undefined` keeps the default; `''` omits the image and associated

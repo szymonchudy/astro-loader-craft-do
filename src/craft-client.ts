@@ -138,7 +138,7 @@ export function createCraftClient(connection: CraftConnection, request: typeof f
     const bytes = await requestBytes(new URL(path, base), request, {
       init: { method: 'GET', headers: { Accept: accept, Authorization: `Bearer ${apiKey}` } },
       maximum: limits.apiBytes, milliseconds: limits.apiMs,
-      ...(budget ? { parent: budget.time } : {}),
+      ...(budget ? { parent: budget.time, onBytes: budget.api } : {}),
       failure: `Craft request failed or timed out while ${operation}; response could not be read.`,
       httpError: status => httpError(status, operation),
     });

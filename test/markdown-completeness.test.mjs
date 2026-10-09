@@ -88,9 +88,9 @@ test('valid pages invoke each consumer renderer once and may intentionally omit 
   assert.deepEqual(context.calls, ['parse', 'render', 'clear', 'set']);
 });
 
-// The normalizer removes metadata, so this detects a source budget independently
-// of the final output budget and proves that it accumulates across items.
-test('retained source bytes are capped across the whole sync, including metadata-only exports', async () => {
+// Removed metadata still spends the aggregate API allowance before normalization;
+// the separate retained-source and final-output budgets cannot be used to evade it.
+test('metadata-only source bytes spend the API allowance across the whole sync', async () => {
   const original = globalThis.fetch;
   const body = `<collectionItem>\n  <title>${'x'.repeat(7 * 1024 * 1024)}</title>\n</collectionItem>`;
   globalThis.fetch = async (url, init) => {
@@ -101,7 +101,7 @@ test('retained source bytes are capped across the whole sync, including metadata
   let loader;
   try { loader = craftCollection(connection); } finally { globalThis.fetch = original; }
   const context = state();
-  await assert.rejects(loader.load(context), /source Markdown size exceeds/);
+  await assert.rejects(loader.load(context), /API response bytes across the sync/);
   assert.deepEqual([...context.entries.keys()], ['previous']);
   assert.ok(!context.calls.includes('clear'));
 });
