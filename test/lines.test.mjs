@@ -92,7 +92,7 @@ test('loader shares bindings across pagination, updates style-only digests and r
     parseData: async ({ data }) => data,
     renderMarkdown: async body => ({ html: body }),
     generateDigest: value => JSON.stringify(value),
-    store: { clear: () => entries.clear(), set: entry => entries.set(entry.id, entry) },
+    store: { entries: () => [...entries], clear: () => entries.clear(), set: entry => entries.set(entry.id, entry) },
     logger: { info() {} },
   };
   await loader.load(context);

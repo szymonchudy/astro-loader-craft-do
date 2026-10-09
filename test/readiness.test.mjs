@@ -12,7 +12,7 @@ test('empty successful Markdown cannot erase structured prose; a truly empty ite
    globalThis.fetch=async(url,init)=>url.pathname.endsWith('/items')?Response.json({items:[{id:'item',title:'Title',properties:{}}]}):init.headers.Accept==='application/json'?Response.json({id:'item',type:'collectionItem',content:hasContent?[{id:'text',type:'text',markdown:'Real prose'}]:[]}):new Response(body);
    const loader=craftCollection(connection);globalThis.fetch=original;
    const entries=new Map([['previous',{id:'previous'}]]);
-   const context={store:{clear:()=>entries.clear(),set:e=>entries.set(e.id,e)},parseData:async({data})=>data,renderMarkdown:async()=>({html:''}),generateDigest:JSON.stringify,logger:{info(){}}};
+   const context={store:{entries:()=>[...entries],clear:()=>entries.clear(),set:e=>entries.set(e.id,e)},parseData:async({data})=>data,renderMarkdown:async()=>({html:''}),generateDigest:JSON.stringify,logger:{info(){}}};
    if(hasContent){await assert.rejects(loader.load(context),/incomplete|empty/);assert.deepEqual([...entries.keys()],['previous'])}else{await loader.load(context);assert.equal(entries.get('item').body,'')}
   }
  }

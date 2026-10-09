@@ -33,7 +33,7 @@ function state() {
     parseData: async ({ data }) => { calls.push('parse'); return data; },
     renderMarkdown: async body => { calls.push('render'); return { html: body }; },
     generateDigest: JSON.stringify,
-    store: { clear: () => { calls.push('clear'); entries.clear(); }, set: entry => { calls.push('set'); entries.set(entry.id, entry); } },
+    store: { entries: () => [...entries], clear: () => { calls.push('clear'); entries.clear(); }, set: entry => { calls.push('set'); entries.set(entry.id, entry); } },
     logger: { info() {} },
   };
 }

@@ -21,7 +21,7 @@ function context(parseData) {
     parseData,
     renderMarkdown: async () => ({ html: '' }),
     generateDigest: (data) => JSON.stringify(data),
-    store: { clear: () => entries.clear(), set: (entry) => entries.set(entry.id, entry) },
+    store: { entries: () => [...entries], clear: () => entries.clear(), set: (entry) => entries.set(entry.id, entry) },
     logger: { info() {} },
   };
 }

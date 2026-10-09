@@ -28,7 +28,7 @@ async function fixture(renderers = {}) {
  };
  const original=globalThis.fetch;globalThis.fetch=request;
  const loader=craftCollection({apiUrl:'https://connect.craft.do/link/synthetic/api/v1',apiKey:'credential-not-for-assets',collectionId:'collection',renderers});globalThis.fetch=original;
- const state={config:{root,cacheDir:new URL('cache/',root)},store:{clear(){entries.clear()},set(e){entries.set(e.id,e)}},
+ const state={config:{root,cacheDir:new URL('cache/',root)},store:{entries:()=>[...entries],clear(){entries.clear()},set(e){entries.set(e.id,e)}},
   parseData:async({data,filePath})=>{assert.ok(filePath.startsWith(root.pathname));if(fail==='schema')throw Error('schema');return data},
   renderMarkdown:async body=>{if(fail==='render')throw Error('render');return {html:body,metadata:{imagePaths:[]}}},generateDigest:JSON.stringify,logger:{info(){}}};
  return {loader,state,entries,root,setFail(value){fail=value},replace(value){raster=value},refresh(){source='https://r.craft.do/asset?signature=second';alt='Updated alt'}};

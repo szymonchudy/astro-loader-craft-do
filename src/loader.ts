@@ -73,9 +73,24 @@ export function craftCollection(options: CraftCollectionOptions): Loader {
           entries.push({ id: item.id, data, body, rendered, filePath, assetImports: rendered.metadata?.imagePaths ?? [], digest: generateDigest({ data, body }) });
         }
         budget.time.check();
-        store.clear();
-        for (const entry of entries) store.set(entry);
-        logger.info(`Loaded ${entries.length} Craft Collection entries.`);
+        // Astro's scoped set can throw while traversing schema output, after
+        // earlier writes have succeeded. Keep all entry fields for restoration,
+        // including assetImports/imageImports, rendered and deferred metadata.
+        const previous = store.entries().map(([id, entry]) => ({ ...entry, id }));
+        try {
+          store.clear();
+          for (const entry of entries) store.set(entry);
+          logger.info(`Loaded ${entries.length} Craft Collection entries.`);
+        } catch (error) {
+          let rollbackFailed = false;
+          try { store.clear(); } catch { rollbackFailed = true; }
+          // Attempt every old entry even if the store rejects one restoration.
+          for (const entry of previous) {
+            try { store.set(entry); } catch { rollbackFailed = true; }
+          }
+          if (rollbackFailed) throw new Error('Craft Collection commit failed and the previous snapshot could not be restored.');
+          throw error;
+        }
       } finally { budget.time.close(); }
     },
   };
