@@ -146,7 +146,13 @@ export function createCraftClient(connection: CraftConnection, request: typeof f
   }
   let blockCount = 0;
 
-  const itemCursors = new Map<string, (string | undefined)[]>();
+  // Expectations belong to the exact root request cursor, not independent
+  // JSON/Markdown page counts. Descendants are expanded before deriving them.
+  const itemPages = new Map<string, { cursor: string | undefined; hasContent: boolean }[]>();
+  function hasContent(children: CraftBlock[]): boolean {
+    return children.some(child => Boolean(child.markdown?.trim() || child.url ||
+      !['text', 'page', 'card'].includes(child.type)) || hasContent(child.content ?? []));
+  }
 
   async function markdownPage(itemId: string, cursor?: string): Promise<string> {
     const query = new URLSearchParams({ id: itemId, maxDepth: '-1', ...(cursor ? { cursor } : {}) });
@@ -156,11 +162,19 @@ export function createCraftClient(connection: CraftConnection, request: typeof f
 
   async function* iterateItemMarkdownPages(itemId: string): AsyncGenerator<string> {
     requireId(itemId);
-    for (const cursor of itemCursors.get(itemId) ?? [undefined]) yield await markdownPage(itemId, cursor);
+    for await (const page of iterateItemMarkdownSources(itemId)) yield page.markdown;
+  }
+
+  async function* iterateItemMarkdownSources(itemId: string) {
+    requireId(itemId);
+    for (const page of itemPages.get(itemId) ?? [{ cursor: undefined, hasContent: false }]) {
+      yield { markdown: await markdownPage(itemId, page.cursor), hasStructuredContent: page.hasContent };
+    }
   }
 
   return {
     iterateItemMarkdownPages,
+    iterateItemMarkdownSources,
     async listCollectionItems(collectionId: string): Promise<CraftItem[]> {
       requireId(collectionId);
       const items: CraftItem[] = [];
@@ -193,9 +207,8 @@ export function createCraftClient(connection: CraftConnection, request: typeof f
         let root: CraftBlock | undefined;
         let cursor: string | undefined;
         const seen = new Set<string>();
-        const cursors: (string | undefined)[] = [];
+        const pages: { cursor: string | undefined; start: number; end: number }[] = [];
         do {
-          cursors.push(cursor);
           const query = new URLSearchParams({ id, maxDepth: '-1', ...(cursor ? { cursor } : {}) });
           const response = await read(`blocks?${query}`, 'application/json', 'reading structured item blocks');
           let value: unknown;
@@ -205,6 +218,8 @@ export function createCraftClient(connection: CraftConnection, request: typeof f
           count(block);
           if (id === itemId && (block.type !== 'collectionItem' || !block.content)) throw new Error('Craft returned an invalid structured item root.');
           if (block.id !== id || (root && root.type !== block.type)) throw new Error('Craft returned inconsistent block pagination.');
+          const start = root?.content?.length ?? 0;
+          pages.push({ cursor, start, end: start + (block.content?.length ?? 0) });
           if (!root) root = block;
           else root.content = [...(root.content ?? []), ...(block.content ?? [])];
           cursor = block.nextCursor;
@@ -227,7 +242,10 @@ export function createCraftClient(connection: CraftConnection, request: typeof f
         delete root!.nextCursor;
         await expand(root!);
         active.delete(id);
-        if (id === itemId) itemCursors.set(itemId, cursors);
+        if (id === itemId) itemPages.set(itemId, pages.map(page => ({
+          cursor: page.cursor,
+          hasContent: hasContent(root!.content!.slice(page.start, page.end)),
+        })));
         return root!;
       }
       const root = await complete(itemId);
