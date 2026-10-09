@@ -136,8 +136,8 @@ test('response stream failures are sanitized for both formats', async () => {
     }));
   }
   const client = createCraftClient(connection, async () => brokenResponse());
-  await assert.rejects(client.listCollectionItems('collection'), /could not be read as JSON/);
-  await assert.rejects(client.getItemMarkdown('item'), /Markdown response could not be read/);
+  await assert.rejects(client.listCollectionItems('collection'), /response could not be read/);
+  await assert.rejects(client.getItemMarkdown('item'), /response could not be read/);
 });
 
 test('exhausts item/root/nested cursors without rereading complete inline descendants', async () => {
@@ -162,7 +162,7 @@ test('rejects repeated cursors, inconsistent root identities and duplicate struc
   for(const mode of ['cursor','identity','duplicate','cycle']){
     const client=createCraftClient(connection,async(url)=>{
       const id=url.searchParams.get('id');const cursor=url.searchParams.get('cursor');
-      if(mode==='cycle')return Response.json({id,type:'page',content:[{id,type:'page'}]});
+      if(mode==='cycle')return Response.json({id,type:'collectionItem',content:[{id,type:'page'}]});
       return Response.json({id:mode==='identity'&&cursor?'wrong':id,type:'collectionItem',content:[{id:mode==='duplicate'?'same':String(cursor),type:'text',markdown:'x'}],...(!cursor||mode==='cursor'?{nextCursor:'next'}:{})});
     });
     await assert.rejects(client.getItemBlocks('item'),/repeated|inconsistent|duplicate|cyclic/);

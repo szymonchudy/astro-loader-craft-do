@@ -282,7 +282,7 @@ function normalizeBlocks(lines: string[], renderers: CraftRenderers, depth = 0, 
     }
     const htmlBlock = /^ {0,3}<\/?(?:address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h[1-6]|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|nav|noframes|ol|optgroup|option|p|param|search|section|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul)(?:\s|\/?>)/i.test(line)
       || /^ {0,3}<\/?[a-z][\w-]*(?:\s[^>]*|\s*)>\s*$/i.test(line);
-    if (renderers.line && htmlBlock && !/^<(?:page|card|callout|caption)(?:\s|>)/.test(line)) {
+    if (renderers.line && htmlBlock && !/^ {0,3}<\/?(?:collectionItem|page|card|pageTitle|content|contentPreview|itemsPreview|callout|caption|highlight)\b/.test(line)) {
       let end = index + 1;
       while (end < lines.length && lines[end]!.trim()) end++;
       output.push(...lines.slice(index, end)); index = end - 1; continue;
@@ -384,7 +384,7 @@ function normalizeBlocks(lines: string[], renderers: CraftRenderers, depth = 0, 
         index = end - 1; continue;
       }
     }
-    if (/^<\/?(?:page|card|content|contentPreview|itemsPreview|callout|caption)\b/.test(line)) {
+    if (/^ {0,3}<\/?(?:collectionItem|page|card|pageTitle|content|contentPreview|itemsPreview|callout|caption)\b/.test(line)) {
       throw new Error('Craft returned malformed or truncated body structure.');
     }
     // Process a prose run together so multiline code spans stay literal.

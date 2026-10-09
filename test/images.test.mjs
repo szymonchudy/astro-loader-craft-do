@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, readdir } from 'node:fs/promises';
+import { mkdtemp, readFile, readdir, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { pathToFileURL } from 'node:url';
 import sharp from 'sharp';
@@ -76,4 +76,43 @@ test('identical asset bytes keep distinct literal alt text for each figure',asyn
 test("AVIF is identified from Sharp's AV1-in-HEIF metadata",async()=>{
  const f=await fixture();const avif=await sharp(bytes).avif().toBuffer();f.replace(avif);await f.loader.load(f.state);
  assert.match(f.entries.get('post').data.images[0].src,/\.avif$/);
+});
+
+test('all GIF/WebP frames decode before commit; later-frame corruption preserves previous snapshot and exact original bytes',async()=>{
+ for(const format of ['gif','webp']){
+  const raw=Buffer.concat([Buffer.alloc(16*16*3,0),Buffer.alloc(16*16*3,255)]);
+  const animated=await sharp(raw,{raw:{width:16,height:32,channels:3,pageHeight:16}})[format]({delay:[100,100]}).toBuffer();
+  const f=await fixture();f.replace(animated);await f.loader.load(f.state);const previous=f.entries.get('post');
+  const cache=new URL('craft-images/',f.state.config.cacheDir);
+  assert.equal((await sharp(animated).metadata()).pages,2);
+  assert.deepEqual(await readFile(new URL(previous.data.images[0].src,cache)),animated);
+  const corrupt=Buffer.from(animated);corrupt[corrupt.length-(format==='gif'?16:14)]=255;
+  // Demonstrate why the original first-frame-only validation was insufficient.
+  await sharp(corrupt,{failOn:'warning'}).raw().toBuffer();
+  await assert.rejects(sharp(corrupt,{failOn:'warning',pages:-1}).raw().toBuffer());
+  f.replace(corrupt);await assert.rejects(f.loader.load(f.state),/complete supported raster/);
+  assert.equal(f.entries.get('post'),previous);assert.equal((await readdir(cache)).length,1);
+ }
+});
+test('animation frame and total decoded pixel limits reject before cache publication',async()=>{
+ const f=await fixture();await f.loader.load(f.state);const previous=f.entries.get('post');
+ const frames=Buffer.alloc(201*3);for(let i=0;i<201;i++)frames[i*3]=i;
+ const excessive=await sharp(frames,{raw:{width:1,height:201,channels:3,pageHeight:1}}).gif({delay:Array(201).fill(100),keepDuplicateFrames:true}).toBuffer();
+ assert.equal((await sharp(excessive).metadata()).pages,201);
+ f.replace(excessive);await assert.rejects(f.loader.load(f.state),/complete supported raster/);assert.equal(f.entries.get('post'),previous);
+ // Highly compressible but oversized raster: 40,006,324 decoded pixels.
+ const pixels=await sharp({create:{width:6326,height:6326,channels:3,background:'#000'}}).png().toBuffer();
+ f.replace(pixels);await assert.rejects(f.loader.load(f.state),/complete supported raster/);assert.equal(f.entries.get('post'),previous);
+});
+
+test('failed atomic cache rename removes its temporary file',async()=>{
+ const { createHash }=await import('node:crypto');
+ const { localizeImages }=await import('../dist/images.js');
+ const cache=pathToFileURL(await mkdtemp(tmpdir()+'/craft-cache-cleanup-')+'/');
+ const name=`${createHash('sha256').update(bytes).digest('hex')}.png`;
+ await mkdir(new URL(name,cache)); // A directory prevents the atomic rename.
+ const source='https://r.craft.do/synthetic';
+ const root={id:'root',type:'collectionItem',content:[{id:'image',type:'image',url:source,markdown:`![](${source})`}]};
+ await assert.rejects(localizeImages(root,cache,async()=>new Response(bytes)));
+ assert.deepEqual(await readdir(cache),[name]);
 });

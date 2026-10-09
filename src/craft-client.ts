@@ -1,3 +1,5 @@
+import { checkLimit, limits, type SyncBudget } from './budget.js';
+import { requestBytes } from './transport.js';
 /** Internal transport configuration; the library does not load environment files. */
 interface CraftConnection {
   apiUrl: string;
@@ -34,15 +36,17 @@ export interface CraftBlock {
 }
 
 function cursorOf(value: Record<string, unknown>): string | undefined {
+  if (value.pagination !== undefined && value.pagination !== null && !isRecord(value.pagination)) throw new Error('Craft returned invalid pagination fields.');
   const pagination = isRecord(value.pagination) ? value.pagination : value;
   const cursor = pagination.nextCursor;
   if (cursor === undefined || cursor === null) return undefined;
   if (typeof cursor !== 'string' || !cursor) throw new Error('Craft returned an invalid pagination cursor.');
   return cursor;
 }
-function parseBlock(value: unknown, depth = 0): CraftBlock {
+function parseBlock(value: unknown, depth = 0, budget?: SyncBudget): CraftBlock {
+  budget?.block();
   if (depth > 64) throw new Error('Craft structured blocks exceed the supported nesting depth.');
-  if (!isRecord(value) || typeof value.id !== 'string' || !value.id.trim() || typeof value.type !== 'string') throw new Error('Craft returned invalid structured blocks.');
+  if (!isRecord(value) || typeof value.id !== 'string' || !value.id.trim() || value.id === '.' || value.id === '..' || typeof value.type !== 'string' || !value.type.trim()) throw new Error('Craft returned invalid structured blocks.');
   for (const key of ['markdown', 'url', 'altText', 'textStyle', 'listStyle', 'lineStyle', 'separatorStyle']) {
     if (value[key] !== undefined && typeof value[key] !== 'string') throw new Error('Craft returned invalid structured block fields.');
   }
@@ -59,7 +63,7 @@ function parseBlock(value: unknown, depth = 0): CraftBlock {
     ...(value.textStyle === undefined ? {} : { textStyle: value.textStyle as string }),
     ...(value.lineStyle === undefined ? {} : { lineStyle: value.lineStyle as string }),
     ...(value.separatorStyle === undefined ? {} : { separatorStyle: value.separatorStyle as string }),
-    ...(value.content === undefined ? {} : { content: (value.content as unknown[]).map(child => parseBlock(child, depth + 1)) }),
+    ...(value.content === undefined ? {} : { content: (value.content as unknown[]).map(child => parseBlock(child, depth + 1, budget)) }),
   };
 }
 
@@ -122,7 +126,7 @@ function httpError(status: number, operation: string): Error {
  * Internal read-only client. An injectable fetch keeps checks credential-free.
  * Neither the client nor its types are exported from the package entry point.
  */
-export function createCraftClient(connection: CraftConnection, request: typeof fetch = fetch) {
+export function createCraftClient(connection: CraftConnection, request: typeof fetch = fetch, budget?: SyncBudget) {
   const base = connectionUrl(connection.apiUrl);
   if (typeof connection.apiKey !== 'string' || !connection.apiKey.trim() ||
       /[\r\n]/.test(connection.apiKey)) {
@@ -130,25 +134,20 @@ export function createCraftClient(connection: CraftConnection, request: typeof f
   }
   const apiKey = connection.apiKey.trim();
 
-  async function read(path: string, accept: string, operation: string): Promise<Response> {
-    let response: Response;
-    try {
-      response = await request(new URL(path, base), {
-        method: 'GET',
-        redirect: 'error',
-        signal: AbortSignal.timeout(20_000),
-        headers: { Accept: accept, Authorization: `Bearer ${apiKey}` },
-      });
-    } catch {
-      // Upstream exception messages/causes can contain URLs or credentials.
-      throw new Error(`Craft request failed or timed out while ${operation}. Check network access and connection settings.`);
-    }
-    if (!response.ok) {
-      // Do not read or include the error body; even cancellation can reject.
-      try { await response.body?.cancel(); } catch { /* Preserve the safe HTTP error. */ }
-      throw httpError(response.status, operation);
-    }
-    return response;
+  async function read(path: string, accept: string, operation: string): Promise<string> {
+    const bytes = await requestBytes(new URL(path, base), request, {
+      init: { method: 'GET', headers: { Accept: accept, Authorization: `Bearer ${apiKey}` } },
+      maximum: limits.apiBytes, milliseconds: limits.apiMs,
+      ...(budget ? { parent: budget.time } : {}),
+      failure: `Craft request failed or timed out while ${operation}; response could not be read.`,
+      httpError: status => httpError(status, operation),
+    });
+    return bytes.toString('utf8');
+  }
+  let blockCount = 0, continuationCount = 0;
+  function continuation() {
+    checkLimit(++continuationCount, limits.continuationPages, 'continuation page count');
+    budget?.continuation();
   }
 
   const itemCursors = new Map<string, (string | undefined)[]>();
@@ -156,11 +155,16 @@ export function createCraftClient(connection: CraftConnection, request: typeof f
   async function markdownPage(itemId: string, cursor?: string): Promise<string> {
     const query = new URLSearchParams({ id: itemId, maxDepth: '-1', ...(cursor ? { cursor } : {}) });
     const response = await read(`blocks?${query}`, 'text/markdown', 'reading item Markdown');
-    try { return await response.text(); }
-    catch { throw new Error('Craft item Markdown response could not be read.'); }
+    return response;
+  }
+
+  async function* iterateItemMarkdownPages(itemId: string): AsyncGenerator<string> {
+    requireId(itemId);
+    for (const cursor of itemCursors.get(itemId) ?? [undefined]) yield await markdownPage(itemId, cursor);
   }
 
   return {
+    iterateItemMarkdownPages,
     async listCollectionItems(collectionId: string): Promise<CraftItem[]> {
       requireId(collectionId);
       const items: CraftItem[] = [];
@@ -170,11 +174,12 @@ export function createCraftClient(connection: CraftConnection, request: typeof f
         const query = new URLSearchParams({ maxDepth: '0', ...(cursor ? { cursor } : {}) });
         const response = await read(`collections/${encodeURIComponent(collectionId)}/items?${query}`, 'application/json', 'reading Collection items');
         let value: unknown;
-        try { value = await response.json(); } catch { throw new Error('Craft Collection items response could not be read as JSON.'); }
+        try { value = JSON.parse(response); } catch { throw new Error('Craft Collection items response could not be read as JSON.'); }
         items.push(...parseItems(value));
+        checkLimit(items.length, limits.entries, 'Collection entry count');
         cursor = cursorOf(value as Record<string, unknown>);
         if (cursor && seen.has(cursor)) throw new Error('Craft returned a repeated pagination cursor.');
-        if (cursor) seen.add(cursor);
+        if (cursor) { seen.add(cursor); continuation(); }
       } while (cursor);
       if (new Set(items.map(item => item.id)).size !== items.length) throw new Error('Craft returned duplicate Collection items across pages.');
       return items;
@@ -195,14 +200,17 @@ export function createCraftClient(connection: CraftConnection, request: typeof f
           const query = new URLSearchParams({ id, maxDepth: '-1', ...(cursor ? { cursor } : {}) });
           const response = await read(`blocks?${query}`, 'application/json', 'reading structured item blocks');
           let value: unknown;
-          try { value = await response.json(); } catch { throw new Error('Craft structured blocks response could not be read as JSON.'); }
-          const block = parseBlock(value);
+          try { value = JSON.parse(response); } catch { throw new Error('Craft structured blocks response could not be read as JSON.'); }
+          const block = parseBlock(value, 0, budget);
+          function count(node: CraftBlock) { checkLimit(++blockCount, limits.blocks, 'structured block count'); for (const child of node.content ?? []) count(child); }
+          count(block);
+          if (id === itemId && (block.type !== 'collectionItem' || !block.content)) throw new Error('Craft returned an invalid structured item root.');
           if (block.id !== id || (root && root.type !== block.type)) throw new Error('Craft returned inconsistent block pagination.');
           if (!root) root = block;
           else root.content = [...(root.content ?? []), ...(block.content ?? [])];
           cursor = block.nextCursor;
           if (cursor && seen.has(cursor)) throw new Error('Craft returned a repeated block pagination cursor.');
-          if (cursor) seen.add(cursor);
+          if (cursor) { seen.add(cursor); continuation(); }
         } while (cursor);
         // maxDepth=-1 already includes descendants. Re-read only an explicitly
         // incomplete subtree; do not redownload every inline nested page.
@@ -240,7 +248,7 @@ export function createCraftClient(connection: CraftConnection, request: typeof f
     async getItemMarkdownPages(itemId: string): Promise<string[]> {
       requireId(itemId);
       const pages: string[] = [];
-      for (const cursor of itemCursors.get(itemId) ?? [undefined]) pages.push(await markdownPage(itemId, cursor));
+      for await (const page of iterateItemMarkdownPages(itemId)) pages.push(page);
       return pages;
     },
   };
