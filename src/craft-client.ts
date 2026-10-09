@@ -144,11 +144,7 @@ export function createCraftClient(connection: CraftConnection, request: typeof f
     });
     return bytes.toString('utf8');
   }
-  let blockCount = 0, continuationCount = 0;
-  function continuation() {
-    checkLimit(++continuationCount, limits.continuationPages, 'continuation page count');
-    budget?.continuation();
-  }
+  let blockCount = 0;
 
   const itemCursors = new Map<string, (string | undefined)[]>();
 
@@ -179,7 +175,10 @@ export function createCraftClient(connection: CraftConnection, request: typeof f
         checkLimit(items.length, limits.entries, 'Collection entry count');
         cursor = cursorOf(value as Record<string, unknown>);
         if (cursor && seen.has(cursor)) throw new Error('Craft returned a repeated pagination cursor.');
-        if (cursor) { seen.add(cursor); continuation(); }
+        if (cursor) {
+          seen.add(cursor);
+          checkLimit(seen.size, limits.continuationPages, 'continuation page count');
+        }
       } while (cursor);
       if (new Set(items.map(item => item.id)).size !== items.length) throw new Error('Craft returned duplicate Collection items across pages.');
       return items;
@@ -210,7 +209,10 @@ export function createCraftClient(connection: CraftConnection, request: typeof f
           else root.content = [...(root.content ?? []), ...(block.content ?? [])];
           cursor = block.nextCursor;
           if (cursor && seen.has(cursor)) throw new Error('Craft returned a repeated block pagination cursor.');
-          if (cursor) { seen.add(cursor); continuation(); }
+          if (cursor) {
+            seen.add(cursor);
+            checkLimit(seen.size, limits.continuationPages, 'continuation page count');
+          }
         } while (cursor);
         // maxDepth=-1 already includes descendants. Re-read only an explicitly
         // incomplete subtree; do not redownload every inline nested page.

@@ -48,11 +48,10 @@ export function deadline(milliseconds: number, parent?: Deadline): Deadline {
 }
 export function createSyncBudget(milliseconds = limits.syncMs) {
   const time = deadline(milliseconds);
-  let blocks = 0, continuations = 0, markdown = 0;
+  let blocks = 0, markdown = 0;
   return {
     time,
     block() { time.check(); checkLimit(++blocks, limits.blocks, 'structured block count'); },
-    continuation() { time.check(); checkLimit(++continuations, limits.continuationPages, 'continuation page count'); },
     markdown(bytes: number) { time.check(); markdown += bytes; checkLimit(markdown, limits.markdownBytes, 'normalized Markdown size'); },
   };
 }

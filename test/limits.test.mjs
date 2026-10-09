@@ -53,5 +53,36 @@ test('API entry, block, response and endless unique cursor limits are finite',as
 test('whole-sync budgets accumulate across operations and reject expired work',async()=>{
  const budget=createSyncBudget(20);
  try{budget.markdown(limits.markdownBytes);assert.throws(()=>budget.markdown(1),/normalized Markdown/);await assert.rejects(budget.time.wait(new Promise(()=>{})),/timed out/);assert.throws(()=>budget.block(),/timed out/)}finally{budget.time.close()}
- const counts=createSyncBudget();try{for(let i=0;i<limits.blocks;i++)counts.block();assert.throws(()=>counts.block(),/block count/);for(let i=0;i<limits.continuationPages;i++)counts.continuation();assert.throws(()=>counts.continuation(),/continuation page count/)}finally{counts.time.close()}
+ const counts=createSyncBudget();try{for(let i=0;i<limits.blocks;i++)counts.block();assert.throws(()=>counts.block(),/block count/)}finally{counts.time.close()}
+});
+
+
+test('continuation allowance resets for each independent operation while sync budget remains shared',async()=>{
+ const budget=createSyncBudget();
+ const calls=new Map();
+ const client=createCraftClient(connection,async url=>{
+  const id=url.searchParams.get('id')??'collection';
+  const cursor=Number(url.searchParams.get('cursor')??0);
+  calls.set(id,(calls.get(id)??0)+1);
+  const continuation=cursor<60?{nextCursor:String(cursor+1)}:{};
+  return url.pathname.endsWith('/items')?Response.json({items:[],...continuation}):Response.json({id,type:'collectionItem',content:[],...continuation});
+ },budget);
+ try{
+  await client.listCollectionItems('collection');
+  await client.getItemBlocks('first');
+  await client.getItemBlocks('second');
+  assert.deepEqual([...calls.values()],[61,61,61]);
+ }finally{budget.time.close()}
+});
+
+test('each structured subtree gets its own continuation allowance; one operation still cannot exceed100',async()=>{
+ const budget=createSyncBudget();
+ const client=createCraftClient(connection,async url=>{
+  const id=url.searchParams.get('id');const cursor=Number(url.searchParams.get('cursor')??0);
+  if(id==='item')return Response.json({id,type:'collectionItem',content:[{id:'nested-first',type:'page'},{id:'nested-second',type:'page'}]});
+  return Response.json({id,type:'page',content:[],...(cursor<60?{nextCursor:String(cursor+1)}:{})});
+ },budget);
+ try{assert.equal((await client.getItemBlocks('item')).content.length,2)}finally{budget.time.close()}
+ let calls=0;const endless=createCraftClient(connection,async()=>Response.json({id:'item',type:'collectionItem',content:[],nextCursor:String(++calls)}));
+ await assert.rejects(endless.getItemBlocks('item'),/continuation page count/);assert.equal(calls,101);
 });

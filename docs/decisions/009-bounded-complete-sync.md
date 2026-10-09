@@ -24,7 +24,7 @@ These are safety limits, not new consumer options:
 | --- | --- |
 | Collection entries | 500 |
 | Received structured blocks across one sync | 25,000 |
-| Continuation pages across one sync | 100 |
+| Continuation pages per individual paginated operation | 100 |
 | Each API response | 8 MiB |
 | Total normalized Markdown, including callback output | 32 MiB |
 | Each downloaded media file | 32 MiB |
@@ -36,7 +36,10 @@ These are safety limits, not new consumer options:
 | Attempts for a request | 3 |
 
 Reads remain sequential. Response bodies are counted incrementally and canceled
-on overflow. Pagination cannot evade limits using a new cursor each time.
+on overflow. Pagination cannot evade limits using a new cursor each time. Each Collection
+listing and root/subtree traversal gets its own continuation allowance; independent
+operations do not consume one another's allowance. The whole-sync deadline and
+block budget still accumulate across all operations.
 Markdown pages are normalized incrementally so retained source strings cannot
 grow with every page before the Markdown budget is checked.
 

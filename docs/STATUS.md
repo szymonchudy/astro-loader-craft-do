@@ -11,7 +11,7 @@ See [bounded complete sync](decisions/009-bounded-complete-sync.md) for the fixe
 internal limits, deadlines/retries, empty-body/root validation, reserved-wrapper
 fix, all-frame GIF/WebP validation and temporary-cache cleanup.
 
-Synthetic regressions reproduced the content defects before the fixes. All 66 portable checks pass, including the real Astro example consumer;
+Synthetic regressions reproduced the content defects before the fixes. All 68 portable checks pass, including the real Astro example consumer;
 `pnpm typecheck` and `git diff --check` also pass. The packed six-version matrix
 remains the next release check; publication has not occurred at this checkpoint. The alpha.0 evidence below
 is historical and must not be read as alpha.1 release validation.
