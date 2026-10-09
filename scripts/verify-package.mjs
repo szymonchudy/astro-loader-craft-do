@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { parsePackManifest } from './pack-manifest.mjs';
 import { createHash } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { copyFileSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, writeFileSync } from 'node:fs';
@@ -68,9 +69,9 @@ if (tarball) {
   };
 } else {
   // A local pack runs prepack. Registry verification downloads the published artifact.
-  const parameters = ['pack', ...(registry ? [`${metadata.name}@${metadata.version}`, '--ignore-scripts'] : []), '--json', '--pack-dest', work];
+  const parameters = ['pack', ...(registry ? [`${metadata.name}@${metadata.version}`, '--ignore-scripts'] : []), '--json', '--pack-destination', work];
   const packed = await run('npm', parameters, repo);
-  manifest = JSON.parse(packed.stdout.slice(packed.stdout.indexOf('[\n')))[0];
+  manifest = parsePackManifest(packed.stdout, metadata.name);
   tarball = join(work, manifest.filename);
 }
 assert.deepEqual(manifest.files.map(file => file.path).sort(), expected, 'Unexpected tarball file set');

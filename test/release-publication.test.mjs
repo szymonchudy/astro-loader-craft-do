@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { assertRegistryArtifact, assertVerifiedProvenance, boundedBody } from '../scripts/verify-publication.mjs';
+import { assertRegistryArtifact, assertVerifiedProvenance, boundedBody, assertResumableSource } from '../scripts/verify-publication.mjs';
 
 const archive = Buffer.from('invented tested archive');
 const version = '0.1.0-alpha.1';
@@ -66,3 +66,22 @@ test('release workflow leaves both consumer tags untouched until verification su
   assert(initialCommand.includes('--tag "verification-$EXPECTED_VERSION"'));
   assert(!/--tag (?:alpha|latest)(?:\s|$)/.test(initialCommand));
 });
+
+test('another provenance source requires an identical existing publication', () => {
+  assertResumableSource(sha, sha, false);
+  assertResumableSource(sha, sha, true);
+  assertResumableSource(sha, 'b'.repeat(40), true);
+  assert.throws(() => assertResumableSource(sha, 'b'.repeat(40), false), /already-published/);
+  assert.throws(() => assertResumableSource(sha, 'not-a-sha', true));
+  assert.throws(() => assertResumableSource(sha, sha, 'true'));
+});
+
+ test('pack manifest accepts npm12 records and earlier arrays, never another package', async () => {
+   const { parsePackManifest } = await import('../scripts/pack-manifest.mjs');
+   const manifest = { name: 'astro-loader-craft-do', filename: 'release.tgz', files: [] };
+   assert.deepEqual(parsePackManifest(JSON.stringify({ [manifest.name]: manifest }, null, 2), manifest.name), manifest);
+   assert.deepEqual(parsePackManifest('prepack output\n' + JSON.stringify([manifest], null, 2), manifest.name), manifest);
+   assert.throws(() => parsePackManifest(JSON.stringify([manifest, manifest]), manifest.name));
+   assert.throws(() => parsePackManifest(JSON.stringify([manifest]), 'another-package'));
+   assert.throws(() => parsePackManifest('incomplete {', manifest.name));
+ });

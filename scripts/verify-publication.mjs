@@ -10,6 +10,13 @@ const name = 'astro-loader-craft-do';
 const repository = 'https://github.com/szymonchudy/astro-loader-craft-do';
 const hash = (bytes, algorithm = 'sha512', encoding = 'hex') => createHash(algorithm).update(bytes).digest(encoding);
 
+export function assertResumableSource(reviewedSha, publishedSha, exists) {
+  assert.match(reviewedSha, /^[a-f0-9]{40}$/);
+  assert.match(publishedSha, /^[a-f0-9]{40}$/);
+  assert(typeof exists === 'boolean');
+  assert(reviewedSha === publishedSha || exists, 'An older source SHA may only resume an identical already-published artifact');
+}
+
 export function assertRegistryArtifact(document, registryBytes, archive, version) {
   assert.equal(document.name, name);
   assert.equal(document.version, version);

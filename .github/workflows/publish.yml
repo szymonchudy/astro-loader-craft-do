@@ -11,6 +11,10 @@ on:
         required: true
         default: 0.1.0-alpha.1
         type: string
+      published_source_sha:
+        description: Original provenance source SHA, only for resuming an identical published artifact
+        required: false
+        type: string
       validate_only:
         description: Validate and retain the candidate archive without publishing
         required: false
@@ -24,6 +28,7 @@ concurrency:
 env:
   EXPECTED_SHA: ${{ inputs.expected_sha }}
   EXPECTED_VERSION: ${{ inputs.expected_version }}
+  PUBLISHED_SOURCE_SHA: ${{ inputs.published_source_sha || inputs.expected_sha }}
 jobs:
   prepare:
     if: github.ref == 'refs/heads/main'
@@ -33,6 +38,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.expected_sha }}
+          fetch-depth: 0
       - uses: pnpm/action-setup@v4
         with:
           version: 12.8.1
@@ -47,6 +53,8 @@ jobs:
           import { readFileSync } from 'node:fs';
           import { execFileSync } from 'node:child_process';
           assert.match(process.env.EXPECTED_SHA, /^[a-f0-9]{40}$/);
+          assert.match(process.env.PUBLISHED_SOURCE_SHA, /^[a-f0-9]{40}$/);
+          execFileSync('git', ['merge-base', '--is-ancestor', process.env.PUBLISHED_SOURCE_SHA, process.env.EXPECTED_SHA]);
           assert.match(process.env.EXPECTED_VERSION, /^0\.1\.0-alpha\.\d+$/);
           assert.equal(process.env.GITHUB_SHA, process.env.EXPECTED_SHA, 'Workflow provenance must use the reviewed source SHA');
           assert.equal(execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(), process.env.EXPECTED_SHA);
@@ -80,6 +88,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.expected_sha }}
+          fetch-depth: 0
       - uses: pnpm/action-setup@v4
         with:
           version: 12.8.1
@@ -107,6 +116,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.expected_sha }}
+          fetch-depth: 0
       - uses: pnpm/action-setup@v4
         with:
           version: 12.8.1
@@ -127,6 +137,14 @@ jobs:
       - name: Recover an already-published identical artifact without republishing
         id: registry
         run: node scripts/verify-publication.mjs "/tmp/craft-release/astro-loader-craft-do-$EXPECTED_VERSION.tgz" "$EXPECTED_VERSION" "$EXPECTED_SHA" --preflight
+      - name: Reject fresh publication with another provenance source
+        env:
+          REGISTRY_EXISTS: ${{ steps.registry.outputs.exists }}
+        run: |
+          node --input-type=module - <<'NODE'
+          import { assertResumableSource } from './scripts/verify-publication.mjs';
+          assertResumableSource(process.env.EXPECTED_SHA, process.env.PUBLISHED_SOURCE_SHA, process.env.REGISTRY_EXISTS === 'true');
+          NODE
       - name: Publish the verified archive through npm trusted publishing
         if: steps.registry.outputs.exists != 'true'
         run: |
@@ -135,8 +153,9 @@ jobs:
           env -u NODE_AUTH_TOKEN NPM_CONFIG_USERCONFIG=/tmp/craft-release.npmrc npm publish /tmp/craft-release/astro-loader-craft-do-*.tgz --access public --tag "verification-$EXPECTED_VERSION"
       - name: Verify registry consumers, exact bytes and cryptographic source provenance
         run: |
-          pnpm test:package --registry
-          node scripts/verify-publication.mjs "/tmp/craft-release/astro-loader-craft-do-$EXPECTED_VERSION.tgz" "$EXPECTED_VERSION" "$EXPECTED_SHA"
+          printf 'registry=https://registry.npmjs.org/\n' > /tmp/craft-release.npmrc
+          env -u NODE_AUTH_TOKEN NPM_CONFIG_USERCONFIG=/tmp/craft-release.npmrc pnpm test:package --registry
+          node scripts/verify-publication.mjs "/tmp/craft-release/astro-loader-craft-do-$EXPECTED_VERSION.tgz" "$EXPECTED_VERSION" "$PUBLISHED_SOURCE_SHA"
       - name: Advance alpha and latest after registry verification
         run: |
           test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$EXPECTED_SHA"
