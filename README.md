@@ -23,9 +23,9 @@ This is experimental compatibility evidence, not a beta promise.
 ## Install the alpha
 
 ```sh
-npm install --save-exact astro-loader-craft-do@0.1.0-alpha.0
+npm install --save-exact astro-loader-craft-do@0.1.0-alpha.1
 # or
-pnpm add --save-exact astro-loader-craft-do@0.1.0-alpha.0
+pnpm add --save-exact astro-loader-craft-do@0.1.0-alpha.1
 ```
 
 The `alpha` tag tracks experimental releases. Pin an exact version when dogfooding.
@@ -199,8 +199,9 @@ remain unchanged. Local link rewriting remains unverified. The loader normalizes
 observed wrappers and nested pages, rather
 than reproducing Craft's full appearance. All property values are passed to
 the consumer schema without conversion; exhaustive property-type support is
-not established. Large-Collection behavior, API-read retries, incremental fetching,
-and exhaustive Craft coverage remain pending. Leading frontmatter-like body text
+not established. Large-Collection behavior, incremental fetching,
+and exhaustive Craft coverage remain pending. Idempotent API reads retry transient
+transport failures and HTTP 408/429/500/502/503/504 within bounded operation deadlines. Leading frontmatter-like body text
 is rendered on the tested Astro 5 versions and stripped by Astro 6/7; body
 frontmatter does not replace validated Collection metadata. Node versions outside
 24 and 26 and platforms beyond the recorded checks are unverified.

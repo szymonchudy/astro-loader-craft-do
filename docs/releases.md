@@ -40,7 +40,9 @@ The owner approved `0.1.0-alpha.1` and advancing both the `alpha` and existing
 create a stable API commitment.
 
 Dispatch `publish.yml` from main with `expected_sha` set to the complete reviewed
-main commit and `expected_version` set to `0.1.0-alpha.1`. The workflow rejects a
+main commit and `expected_version` set to `0.1.0-alpha.1`. Set `validate_only: true` to validate and retain the same archive on Node 24/26
+while account configuration is blocked; this performs no publication.
+The workflow rejects a
 superseded candidate, packs once, retains the archive/checksum artifact, validates
 those same bytes on Node 24 and 26 against every advertised Astro version, then
 publishes through the configured trusted publisher. Registry integrity and OIDC

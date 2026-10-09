@@ -11,6 +11,11 @@ on:
         required: true
         default: 0.1.0-alpha.1
         type: string
+      validate_only:
+        description: Validate and retain the candidate archive without publishing
+        required: false
+        default: false
+        type: boolean
 permissions:
   contents: read
 concurrency:
@@ -90,6 +95,7 @@ jobs:
       - name: Validate every advertised Astro consumer using the same archive
         run: pnpm test:package --tarball /tmp/craft-release/astro-loader-craft-do-*.tgz
   publish:
+    if: ${{ !inputs.validate_only }}
     needs: [prepare, validate]
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -119,7 +125,7 @@ jobs:
       - run: cd /tmp/craft-release && sha256sum -c SHA256SUMS
       - name: Publish the verified archive through npm trusted publishing
         run: |
-          # setup-node's legacy placeholder must not select token authentication.
+          # Use only OIDC; do not fall back to a saved user/token credential.
           printf 'registry=https://registry.npmjs.org/\n' > /tmp/craft-release.npmrc
           env -u NODE_AUTH_TOKEN NPM_CONFIG_USERCONFIG=/tmp/craft-release.npmrc npm publish /tmp/craft-release/astro-loader-craft-do-*.tgz --access public --tag alpha
       - name: Verify published registry consumers and exact integrity

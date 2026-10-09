@@ -7,13 +7,17 @@ Astro peers, and Node 24/26 policy remain unchanged.
 A successful HTTP response is not proof of complete content. Structured item
 roots must have the Collection-item type and a children array. Empty or
 metadata-only Markdown is rejected when structured descendants demonstrate
-content; a genuinely empty item remains valid. This check precedes consumer
+content; a genuinely empty item remains valid. Each root request cursor is checked against its expanded structured descendants;
+a populated continuation cannot conceal another empty continuation. This check precedes consumer
 callbacks, which may intentionally omit content. Reserved Craft wrapper tags
 cannot escape validation through the optional separator renderer's HTML handling.
 
 The loader stages the complete collection, then replaces the store only after
 all downloads, validation, normalization, schema parsing and rendering succeed.
-A failure retains the previous collection. Old content-addressed image files
+Precommit failures retain the previous collection. If store replacement throws,
+the loader restores every previous entry, including Astro image/import metadata.
+An underlying store that also persistently rejects restoration is reported explicitly;
+no loader can make that broken backing store writable. Old content-addressed image files
 remain usable; unsuccessful atomic cache writes remove their temporary files.
 
 ## Internal resource policy
@@ -26,6 +30,7 @@ These are safety limits, not new consumer options:
 | Received structured blocks across one sync | 25,000 |
 | Continuation pages per individual paginated operation | 100 |
 | Each API response | 8 MiB |
+| Retained source Markdown across the sync | 32 MiB |
 | Total normalized Markdown, including callback output | 32 MiB |
 | Each downloaded media file | 32 MiB |
 | Frames per media file | 200 |
@@ -40,8 +45,9 @@ on overflow. Pagination cannot evade limits using a new cursor each time. Each C
 listing and root/subtree traversal gets its own continuation allowance; independent
 operations do not consume one another's allowance. The whole-sync deadline and
 block budget still accumulate across all operations.
-Markdown pages are normalized incrementally so retained source strings cannot
-grow with every page before the Markdown budget is checked.
+All source pages for each item are prevalidated before consumer callbacks run.
+Retained source bytes accumulate across the whole sync under their own 32 MiB
+cap, independently of the 32 MiB cap on final normalized callback output.
 
 API and media requests retry transport/body interruptions and HTTP
 408/429/500/502/503/504. Backoff starts at 250 ms then 750 ms. A valid Retry-After
