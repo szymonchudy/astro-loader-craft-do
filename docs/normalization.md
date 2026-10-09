@@ -15,6 +15,7 @@ Collection metadata still goes through the consumer's Zod schema independently.
 | `+ Summary` with two-space-indented descendants | Closed HTML details with summary and normalized body | `toggle({ summary, markdown })` |
 | `<caption>` block | Emphasis using `<em>` | `caption({ markdown })` |
 | `<highlight color="…">` or `==text==` | HTML `<mark>` | `highlight({ markdown, color })` |
+| Native `line` block | Unchanged Markdown | Optional `line({ blockId, markdown, lineStyle?, separatorStyle? })` |
 
 Lists, headings, quotations, tables, ordinary emphasis, fenced/indented code,
 links, and images continue through Astro. Nested supported structures are processed
@@ -40,7 +41,7 @@ Default nested-page headings stay H3; consumers can choose a different treatment
 
 ## Callback contract
 
-`CraftRenderers` is exported for consumer adapters. All five callbacks share these
+`CraftRenderers` is exported for consumer adapters. Rendering callbacks share these
 rules:
 
 - Receive inner Markdown after supported child conversions. Toggle summaries are
@@ -56,6 +57,23 @@ rules:
 Callback output is included in the body digest. Changing a callback is applied on
 next content sync even if Craft content is unchanged. These callbacks do not
 install watchers, polling, or browser-side code.
+
+### Optional native separators
+
+`line` is opt-in: omitting it retains exact Markdown rules and consecutive-rule
+behavior. With it, the loader matches standalone rules to structured native line
+blocks in document order across nested containers and paginated exports. Matching
+skips fenced/indented code, inline code spans, HTML literals, comments, and heading
+underlines. Its `markdown` is the native block's separator source, `blockId` is its
+stable ID, and optional `lineStyle`/`separatorStyle` values are preserved strings.
+Unknown string values are left for the consumer to interpret. The callback does
+not receive a document theme or inherited page styling.
+
+The loader does not add CSS, SVGs, Doodles, or a size mapping. `undefined` preserves
+the rule; `''` omits it. Metadata comes from the structured request already used
+for images. Missing source, a different rule, an extra Markdown rule, or an unused
+native line fails the opted-in load rather than assigning metadata to a different
+separator. A style change reflected in callback output changes the content digest.
 
 For a consumer-owned adapter:
 

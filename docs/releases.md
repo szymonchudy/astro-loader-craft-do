@@ -64,7 +64,8 @@ The native-image checkpoint is `680b3ec`; the verified release candidate is
   A fresh blog checkout installs and passes its isolated fixture build without
   `vendor/`, a neighboring loader checkout or private settings.
 - [Verified immutable preview](https://chudy-5vkc7tcxz-szymonchudy1s-projects.vercel.app):
-  all five deployed checks and native-image checks pass. All 14 article routes,
+  all five deployed checks and native-image checks pass. Deployed Mermaid diagrams
+  also render and update with theme changes. All 14 article routes,
   OG assets, RSS, draft badges/exclusion and noindex are verified. The deployment
   metadata matches the blog commit above. Production was not promoted.
-- [Blog CI](https://github.com/szymonchudy/chudy-me/actions/runs/37329620585): pending.
+- [Blog CI](https://github.com/szymonchudy/chudy-me/actions/runs/37329620585): passes, including Chromium, WebKit and Storybook.

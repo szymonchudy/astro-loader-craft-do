@@ -26,6 +26,8 @@ export interface CraftBlock {
   textStyle?: string;
   indentationLevel?: number;
   listStyle?: string;
+  lineStyle?: string;
+  separatorStyle?: string;
   content?: CraftBlock[];
   /** Internal continuation hint; never exposed as consumer metadata. */
   nextCursor?: string;
@@ -41,7 +43,7 @@ function cursorOf(value: Record<string, unknown>): string | undefined {
 function parseBlock(value: unknown, depth = 0): CraftBlock {
   if (depth > 64) throw new Error('Craft structured blocks exceed the supported nesting depth.');
   if (!isRecord(value) || typeof value.id !== 'string' || !value.id.trim() || typeof value.type !== 'string') throw new Error('Craft returned invalid structured blocks.');
-  for (const key of ['markdown', 'url', 'altText', 'textStyle', 'listStyle']) {
+  for (const key of ['markdown', 'url', 'altText', 'textStyle', 'listStyle', 'lineStyle', 'separatorStyle']) {
     if (value[key] !== undefined && typeof value[key] !== 'string') throw new Error('Craft returned invalid structured block fields.');
   }
   if (value.indentationLevel !== undefined && (!Number.isInteger(value.indentationLevel) || Number(value.indentationLevel) < 0 || Number(value.indentationLevel) > 5)) throw new Error('Craft returned invalid block indentation.');
@@ -55,6 +57,8 @@ function parseBlock(value: unknown, depth = 0): CraftBlock {
     ...(value.url === undefined ? {} : { url: value.url as string }),
     ...(value.altText === undefined ? {} : { altText: value.altText as string }),
     ...(value.textStyle === undefined ? {} : { textStyle: value.textStyle as string }),
+    ...(value.lineStyle === undefined ? {} : { lineStyle: value.lineStyle as string }),
+    ...(value.separatorStyle === undefined ? {} : { separatorStyle: value.separatorStyle as string }),
     ...(value.content === undefined ? {} : { content: (value.content as unknown[]).map(child => parseBlock(child, depth + 1)) }),
   };
 }

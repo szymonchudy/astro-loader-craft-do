@@ -168,3 +168,13 @@ test('rejects repeated cursors, inconsistent root identities and duplicate struc
     await assert.rejects(client.getItemBlocks('item'),/repeated|inconsistent|duplicate|cyclic/);
   }
 });
+
+test('native separator styles preserve string metadata and reject malformed fields', async () => {
+  const native = { id: 'line', type: 'line', markdown: '*****', lineStyle: 'future-weight', separatorStyle: 'doodle' };
+  const client = createCraftClient(connection, async () => Response.json({ id: 'item', type: 'collectionItem', content: [native] }));
+  assert.deepEqual((await client.getItemBlocks('item')).content, [native]);
+  for (const key of ['lineStyle', 'separatorStyle']) {
+    const invalid = createCraftClient(connection, async () => Response.json({ id: 'item', type: 'collectionItem', content: [{ ...native, [key]: 42 }] }));
+    await assert.rejects(invalid.getItemBlocks('item'), /invalid structured block fields/);
+  }
+});

@@ -174,6 +174,11 @@ for (const version of versions) {
   await build();
   assertDefault(html());
   await run(process.execPath, [cli, 'check'], root);
+  await build({ PACKAGE_LINES: 'enabled' });
+  assert.match(html(), /<hr\s*\/?\s*>/);
+  assert.doesNotMatch(html(), /data-consumer-line/);
+  await build({ PACKAGE_LINES: 'enabled', PACKAGE_RENDERER: 'custom' });
+  assert.match(html(), /<hr data-consumer-line="separator" data-weight="strong" data-family="doodle"/);
   await build({ PACKAGE_RENDERER: 'custom' });
   assert.match(html(), /Consumer choice: Keep <strong>emphasis<\/strong>/);
   assert.match(html(), /Consumer details: Why this matters/);

@@ -1,6 +1,6 @@
 # Project status
 
-Updated: 2026-10-05
+Updated: 2026-10-06
 
 ## Current checkpoint
 
@@ -19,7 +19,7 @@ publication has no CI provenance. No beta stability commitment was made.
 The private blog now pins the npm alpha. A fresh checkout works without a vendor
 archive or neighboring loader repo. Its final Vercel preview passes article,
 native-image, RSS, OG, draft and noindex checks. See [release evidence](releases.md).
-Final private-blog GitHub CI is still running; production promotion is separate.
+Final private-blog GitHub CI passes; production promotion is separate.
 
 Owner preference: complete coherent milestones autonomously, preserve owner edits,
 keep updates concise, and ask only for consequential choices or genuine blockers.
@@ -40,6 +40,25 @@ Reserve mentoring checkpoints for impactful concepts. Do not repeat discovery.
 START_PROMPT.md remains the charter for consequential decisions.
 
 ## Local preview follow-up
+
+Native separators are implemented locally through optional `renderers.line`.
+Consumers receive block ID, exported Markdown and optional native line/separator
+styles. Without the callback, consecutive rules and existing normalization remain
+unchanged. Ordered bindings span nested containers and pagination; protected
+literals and heading underlines do not consume them. Inconsistent bindings and
+callback failures preserve the previous complete collection. See
+[the accepted API decision](decisions/008-optional-native-separator-rendering.md)
+and [normalization contract](normalization.md).
+
+All 54 portable checks, type checking and the clean Astro 7.3.3 packed consumer
+pass, including default/custom separator rendering and the actual blog renderer.
+The blog additionally validates the packed dependency in an isolated synthetic
+site, with Chromium and WebKit at mobile/desktop widths in both themes and with
+JavaScript enabled and disabled. Its full fixture build passes, including seven
+rendered semantic separators and all three SVG assets. The earlier six-version matrix remains recorded evidence;
+this framework-independent opt-in change reran the actual consumer version.
+No package release or downstream registry dependency update occurred. Publishing
+and adopting the tested API remain a separate release milestone.
 
 Native-media resilience follow-up: a user edit exposed a Craft media HTTP 500
 that aborted development startup after one request. A synthetic 500-then-200
@@ -99,7 +118,7 @@ The live sample environment and its Collection selection remain unchanged.
 
 ## Reproduce and inspect
 
-- pnpm test: 47 portable checks; no credentials or live API requests.
+- pnpm test: 54 portable checks; no credentials or live API requests.
 - pnpm typecheck and git diff --check: package types and patch whitespace.
 - pnpm test:package: six clean temporary consumers; requires npm registry access.
 - pnpm test:package --blog /path/to/chudy-me: same matrix plus

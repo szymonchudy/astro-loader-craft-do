@@ -121,7 +121,7 @@ no Zod dependency or generated schema: use the Zod export belonging to your Astr
 ### Consumer-owned rendering
 
 Optional `renderers` callbacks customize Craft callouts, toggles, pages, captions,
-and highlights before Astro renders the result. All have useful defaults:
+highlights, images, and native separators before Astro renders the result. All have useful defaults:
 callouts become semantic asides, toggles become closed details, pages become headings,
 captions become emphasis, and highlights become marks.
 
@@ -140,6 +140,24 @@ Return `undefined` to use a default or `''` to omit content. Callbacks are
 synchronous; errors fail the load without committing a partial snapshot.
 `CraftRenderers` is exported for adapters defined in separate files. Metadata
 still uses your Zod schema and its inferred types.
+
+Native separators pass through unchanged unless you supply `renderers.line`.
+That callback receives `{ blockId, markdown, lineStyle?, separatorStyle? }` from
+the structured native block. For example:
+
+```ts
+renderers: {
+  line: ({ lineStyle }) => lineStyle === 'strong'
+    ? '<hr class="section-break">'
+    : undefined,
+},
+```
+
+The callback only handles native separators, including those inside supported
+nested containers. Code examples and heading underlines remain literal. It uses
+the already-fetched structured blocks, adds no requests, and leaves styling to
+the application. Repeated separators remain separate blocks. Missing or mismatched
+native bindings fail the opted-in load before replacing the previous snapshot.
 
 ### Native images
 

@@ -1,4 +1,5 @@
 import type { NativeImageRendering, CraftImage } from './images.js';
+import type { CraftBlock } from './craft-client.js';
 /** Inner Markdown has Craft structure removed; consumer output is never parsed again. */
 type MarkdownBlock = { readonly markdown: string };
 type Renderer<T> = (block: T) => string | undefined;
@@ -6,11 +7,45 @@ type Renderer<T> = (block: T) => string | undefined;
 /** Synchronous, experimental overrides. undefined uses the default; '' omits content. */
 export interface CraftRenderers {
   image?: Renderer<MarkdownBlock & CraftImage>;
+  /** Opt in to native separator metadata. Without this callback, rules pass through unchanged. */
+  line?: Renderer<MarkdownBlock & { readonly blockId: string; readonly lineStyle?: string; readonly separatorStyle?: string }>;
   callout?: Renderer<MarkdownBlock>;
   toggle?: Renderer<MarkdownBlock & { readonly summary: string }>;
   page?: Renderer<MarkdownBlock & { readonly title: string }>;
   caption?: Renderer<MarkdownBlock>;
   highlight?: Renderer<MarkdownBlock & { readonly color?: string }>;
+}
+
+/** Internal ordered bindings shared by every Markdown page and nested container. */
+export interface NativeLineRendering {
+  block: MarkdownBlock & { readonly blockId: string; readonly lineStyle?: string; readonly separatorStyle?: string };
+  used: boolean;
+}
+
+export function collectNativeLines(root: CraftBlock): NativeLineRendering[] {
+  const result: NativeLineRendering[] = [];
+  function visit(block: CraftBlock): void {
+    if (block.type === 'line') {
+      if (typeof block.markdown !== 'string' || !block.markdown.trim()) throw new Error('Craft native separator is missing its Markdown.');
+      result.push({ block: { blockId: block.id, markdown: block.markdown.trim(),
+        ...(block.lineStyle === undefined ? {} : { lineStyle: block.lineStyle }),
+        ...(block.separatorStyle === undefined ? {} : { separatorStyle: block.separatorStyle }),
+      }, used: false });
+    }
+    for (const child of block.content ?? []) visit(child);
+  }
+  visit(root);
+  return result;
+}
+
+function isRule(line: string): boolean {
+  return /^ {0,3}(?:(?:\*[ \t]*){3,}|(?:-[ \t]*){3,}|(?:_[ \t]*){3,})$/.test(line);
+}
+
+function isSetextUnderline(lines: string[], index: number): boolean {
+  if (!/^ {0,3}(?:-+|=+)[ \t]*$/.test(lines[index]!)) return false;
+  const previous = lines[index - 1];
+  return !!previous?.trim() && !/^(?: {4}|\t| {0,3}(?:[<>#]|[-*+] |\d+[.)] |`{3}|~{3}))/.test(previous) && !isRule(previous);
 }
 
 function render<T>(name: keyof CraftRenderers, renderer: Renderer<T> | undefined, block: T, fallback: () => string): string {
@@ -213,7 +248,7 @@ function wrapperEnd(lines: string[], start: number, tag: string): number {
   throw new Error(`Craft returned an unclosed ${tag} wrapper.`);
 }
 
-function normalizeBlocks(lines: string[], renderers: CraftRenderers, depth = 0, images: NativeImageRendering[] = []): string[] {
+function normalizeBlocks(lines: string[], renderers: CraftRenderers, depth = 0, images: NativeImageRendering[] = [], nativeLines: NativeLineRendering[] = []): string[] {
   if (depth > 30) throw new Error('Craft content exceeds the supported nesting depth.');
   const output: string[] = [];
   for (let index = 0; index < lines.length; index++) {
@@ -234,6 +269,31 @@ function normalizeBlocks(lines: string[], renderers: CraftRenderers, depth = 0, 
       let end = index;
       while (end < lines.length - 1 && !lines[end]!.toLowerCase().includes(`</${raw[1]!.toLowerCase()}>`)) end++;
       output.push(...lines.slice(index, end + 1)); index = end; continue;
+    }
+    // HTML block contents are literal Markdown. Protect these only for the
+    // optional separator matcher; keep the existing normalization path otherwise.
+    const literalEnd = /^ {0,3}<\?/.test(line) ? '?>'
+      : /^ {0,3}<!\[CDATA\[/.test(line) ? ']]>'
+      : /^ {0,3}<![A-Z]/.test(line) ? '>' : undefined;
+    if (renderers.line && literalEnd) {
+      let end = index;
+      while (end < lines.length - 1 && !lines[end]!.includes(literalEnd)) end++;
+      output.push(...lines.slice(index, end + 1)); index = end; continue;
+    }
+    const htmlBlock = /^ {0,3}<\/?(?:address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h[1-6]|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|nav|noframes|ol|optgroup|option|p|param|search|section|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul)(?:\s|\/?>)/i.test(line)
+      || /^ {0,3}<\/?[a-z][\w-]*(?:\s[^>]*|\s*)>\s*$/i.test(line);
+    if (renderers.line && htmlBlock && !/^<(?:page|card|callout|caption)(?:\s|>)/.test(line)) {
+      let end = index + 1;
+      while (end < lines.length && lines[end]!.trim()) end++;
+      output.push(...lines.slice(index, end)); index = end - 1; continue;
+    }
+    if (renderers.line && !isSetextUnderline(lines, index) && (isRule(line) || /^ {0,3}={3,}\s*$/.test(line))) {
+      const native = nativeLines.find(candidate => !candidate.used);
+      if (!native || native.block.markdown !== line.trim()) throw new Error('Craft native separators do not match complete item Markdown.');
+      native.used = true;
+      const rendered = render('line', renderers.line, native.block, () => line);
+      output.push(...(rendered === line ? [line] : ['', rendered, '']));
+      continue;
     }
     // Craft may refresh access signatures between the JSON and Markdown reads.
     // Match a complete image block by its media origin/path, never a prose URL.
@@ -264,7 +324,7 @@ function normalizeBlocks(lines: string[], renderers: CraftRenderers, depth = 0, 
       const nested = lines.slice(index + 1, end);
       const titleLine = nested.find((candidate) => /^  <pageTitle>.*<\/pageTitle>$/.test(candidate));
       const title = inline(titleLine?.replace(/^  <pageTitle>|<\/pageTitle>$/g, '') ?? '', renderers, depth + 1);
-      const markdown = normalizeBlocks(unwrapContent(nested, '  '), renderers, depth + 1, images).join('\n');
+      const markdown = normalizeBlocks(unwrapContent(nested, '  '), renderers, depth + 1, images, nativeLines).join('\n');
       output.push('', render('page', renderers.page, { title, markdown }, () => [title ? `### ${title}` : '', markdown].filter(Boolean).join('\n\n')), '');
       index = end; continue;
     }
@@ -285,7 +345,7 @@ function normalizeBlocks(lines: string[], renderers: CraftRenderers, depth = 0, 
         }
         index = end;
       }
-      const markdown = normalizeBlocks(inner, renderers, depth + 1, images).join('\n');
+      const markdown = normalizeBlocks(inner, renderers, depth + 1, images, nativeLines).join('\n');
       output.push('', render(tag, renderers[tag], { markdown }, () => tag === 'callout'
         ? `<aside data-craft-callout role="note">\n\n${markdown}\n\n</aside>`
         : `<em>${markdown}</em>`), '');
@@ -295,7 +355,7 @@ function normalizeBlocks(lines: string[], renderers: CraftRenderers, depth = 0, 
     if (toggle) {
       const end = indentedEnd(lines, index, 2);
       const children = lines.slice(index + 1, end).map((part) => part.trim() ? part.slice(2) : '');
-      const markdown = normalizeBlocks(children, renderers, depth + 1, images).join('\n');
+      const markdown = normalizeBlocks(children, renderers, depth + 1, images, nativeLines).join('\n');
       const summary = toggle[1]!;
       output.push('', render('toggle', renderers.toggle, { summary, markdown }, () =>
         `<details>\n<summary>${escapeHtml(summary)}</summary>\n\n${markdown}\n\n</details>`), '');
@@ -305,7 +365,7 @@ function normalizeBlocks(lines: string[], renderers: CraftRenderers, depth = 0, 
     if (list) {
       const end = indentedEnd(lines, index, 2);
       const original = [list[2]!, ...lines.slice(index + 1, end).map((part) => part.trim() ? part.slice(2) : '')];
-      const normalized = normalizeBlocks(original, renderers, depth + 1, images).join('\n');
+      const normalized = normalizeBlocks(original, renderers, depth + 1, images, nativeLines).join('\n');
       if (normalized === original.join('\n')) output.push(...lines.slice(index, end));
       else {
         const [first, ...rest] = normalized.split('\n');
@@ -319,7 +379,7 @@ function normalizeBlocks(lines: string[], renderers: CraftRenderers, depth = 0, 
       while (end < lines.length && /^>(?: |$)/.test(lines[end]!)) end++;
       if (end > index) {
         const original = lines.slice(index, end).map((part) => part.replace(/^> ?/, ''));
-        const normalized = normalizeBlocks(original, renderers, depth + 1, images).join('\n');
+        const normalized = normalizeBlocks(original, renderers, depth + 1, images, nativeLines).join('\n');
         output.push(...(normalized === original.join('\n') ? lines.slice(index, end) : normalized.split('\n').map((part) => part ? `> ${part}` : '>')));
         index = end - 1; continue;
       }
@@ -336,12 +396,12 @@ function normalizeBlocks(lines: string[], renderers: CraftRenderers, depth = 0, 
 }
 
 /** Normalize Craft's Collection-item Markdown; preserve ordinary Markdown and URLs. */
-export function normalizeItemMarkdown(markdown: string, renderers: CraftRenderers = {}, images: NativeImageRendering[] = []): string {
+export function normalizeItemMarkdown(markdown: string, renderers: CraftRenderers = {}, images: NativeImageRendering[] = [], nativeLines: NativeLineRendering[] = []): string {
   const lines = trimBlankLines(markdown.replace(/\r\n?/g, '\n').split('\n'));
   if (!lines.length) return '';
   if (!/^<collectionItem(?:\s+[^>]*)?>$/.test(lines[0]!)) throw new Error('Craft item Markdown is missing its expected Collection item wrapper.');
   if (lines.at(-1) !== '</collectionItem>') throw new Error('Craft returned an unclosed Collection item wrapper.');
-  return normalizeBlocks(unwrapContent(lines.slice(1, -1), '  '), renderers, 0, images).join('\n');
+  return normalizeBlocks(unwrapContent(lines.slice(1, -1), '  '), renderers, 0, images, nativeLines).join('\n');
 }
 
 /** Internal fragment normalization for native rich captions. */

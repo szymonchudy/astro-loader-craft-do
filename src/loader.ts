@@ -5,7 +5,7 @@ import { registerImageRendering } from './asset-rendering.js';
 import { localizeImages } from './images.js';
 import type { Loader } from 'astro/loaders';
 import { createCraftClient } from './craft-client.js';
-import { normalizeItemMarkdown, type CraftRenderers } from './normalize.js';
+import { collectNativeLines, normalizeItemMarkdown, type CraftRenderers } from './normalize.js';
 
 /** Connection settings supplied by the Astro application at build time. */
 export interface CraftCollectionOptions {
@@ -42,7 +42,9 @@ export function craftCollection(options: CraftCollectionOptions): Loader {
           data: { title: item.title, properties: item.properties, images: native.map(({ image }) => image) },
         });
         const markdownPages = await client.getItemMarkdownPages(item.id);
-        const body = markdownPages.map(page => normalizeItemMarkdown(page, options.renderers, native)).join('\n\n');
+        const lines = options.renderers?.line ? collectNativeLines(blocks) : [];
+        const body = markdownPages.map(page => normalizeItemMarkdown(page, options.renderers, native, lines)).join('\n\n');
+        if (lines.some(line => !line.used)) throw new Error('Craft native separators do not match complete item Markdown.');
         if (native.some(image => !image.used)) throw new Error('Craft native images do not match complete item Markdown.');
         const rendered = registerImageRendering(await renderMarkdown(body, { fileURL }), native.map(({ image }) => image));
         entries.push({ id: item.id, data, body, rendered, filePath, assetImports: rendered.metadata?.imagePaths ?? [], digest: generateDigest({ data, body }) });
