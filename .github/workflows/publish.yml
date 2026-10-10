@@ -154,6 +154,7 @@ jobs:
       - name: Verify registry consumers, exact bytes and cryptographic source provenance
         run: |
           printf 'registry=https://registry.npmjs.org/\n' > /tmp/craft-release.npmrc
+          node scripts/verify-publication.mjs "/tmp/craft-release/astro-loader-craft-do-$EXPECTED_VERSION.tgz" "$EXPECTED_VERSION" "$PUBLISHED_SOURCE_SHA" --wait-visible
           env -u NODE_AUTH_TOKEN NPM_CONFIG_USERCONFIG=/tmp/craft-release.npmrc pnpm test:package --registry
           node scripts/verify-publication.mjs "/tmp/craft-release/astro-loader-craft-do-$EXPECTED_VERSION.tgz" "$EXPECTED_VERSION" "$PUBLISHED_SOURCE_SHA"
       - name: Advance alpha and latest after registry verification
@@ -164,11 +165,8 @@ jobs:
           env -u NODE_AUTH_TOKEN NPM_CONFIG_USERCONFIG=/tmp/craft-release.npmrc npm dist-tag add "astro-loader-craft-do@$EXPECTED_VERSION" latest
           node --input-type=module - <<'NODE'
           import assert from 'node:assert/strict';
-          import { boundedBody } from './scripts/verify-publication.mjs';
-          const response = await fetch('https://registry.npmjs.org/astro-loader-craft-do', { redirect: 'error', signal: AbortSignal.timeout(20000) });
-          assert(response.ok);
-          const metadata = JSON.parse(await boundedBody(response));
-          for (const tag of ['alpha', 'latest']) assert.equal(metadata['dist-tags'][tag], process.env.EXPECTED_VERSION);
+          import { waitForRegistry } from './scripts/verify-publication.mjs';
+          const metadata = await waitForRegistry(process.env.EXPECTED_VERSION, { tags: ['alpha', 'latest'] });
           const staging = `verification-${process.env.EXPECTED_VERSION}`;
           if (metadata['dist-tags'][staging] !== undefined) {
             assert.equal(metadata['dist-tags'][staging], process.env.EXPECTED_VERSION, 'Do not remove a staging tag owned by another candidate');

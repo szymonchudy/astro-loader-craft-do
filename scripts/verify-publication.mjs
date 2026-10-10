@@ -5,6 +5,7 @@ import { appendFile, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { setTimeout as delay } from 'node:timers/promises';
 
 const name = 'astro-loader-craft-do';
 const repository = 'https://github.com/szymonchudy/astro-loader-craft-do';
@@ -60,13 +61,45 @@ export async function boundedBody(response, limit = 8 * 1024 * 1024) {
   }
 }
 
-async function readRegistry(url, missing = false) {
+async function readRegistry(url, missing = false, timeoutMs = 20_000) {
   const target = new URL(url);
   assert.equal(target.origin, 'https://registry.npmjs.org', 'Read release evidence only from the public npm registry');
-  const response = await fetch(target, { redirect: 'error', signal: AbortSignal.timeout(20_000) });
+  const response = await fetch(target, { redirect: 'error', signal: AbortSignal.timeout(timeoutMs) });
   if (missing && response.status === 404) { await response.body?.cancel(); return null; }
   assert(response.ok, `Registry verification failed with HTTP ${response.status}`);
   return boundedBody(response);
+}
+
+/** Visibility is only a propagation gate; artifact/signature/provenance verification remains mandatory. */
+export async function waitForRegistry(version, {
+  tags = [], attempts = 24, intervalMs = 5_000, timeoutMs = 120_000,
+  read = readRegistry, wait = delay, now = () => performance.now(),
+} = {}) {
+  assert.match(version, /^0\.1\.0-alpha\.\d+$/);
+  assert(Array.isArray(tags) && tags.every(tag => ['alpha', 'latest'].includes(tag)), 'Unsupported release tag');
+  for (const value of [attempts, intervalMs, timeoutMs]) assert(Number.isSafeInteger(value) && value > 0, 'Polling limits must be positive integers');
+  const end = now() + timeoutMs;
+  const record = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+  for (let attempt = 0; attempt < attempts && now() < end; attempt++) {
+    const bytes = await read(`https://registry.npmjs.org/${name}`, true, Math.max(1, Math.floor(Math.min(20_000, end - now()))));
+    if (bytes !== null) {
+      let metadata;
+      try { metadata = JSON.parse(bytes); } catch { throw new Error('Malformed package metadata: invalid JSON'); }
+      assert(record(metadata) && metadata.name === name && record(metadata.versions), 'Malformed package metadata');
+      if (tags.length) {
+        assert(record(metadata['dist-tags']) && Object.values(metadata['dist-tags']).every(value => typeof value === 'string'), 'Malformed registry dist-tags');
+      }
+      if (Object.hasOwn(metadata.versions, version)) {
+        const document = metadata.versions[version];
+        assert(record(document) && document.name === name && document.version === version && record(document.dist)
+          && typeof document.dist.tarball === 'string' && typeof document.dist.integrity === 'string', 'Malformed release metadata');
+        if (now() < end && tags.every(tag => metadata['dist-tags'][tag] === version)) return metadata;
+      }
+    }
+    const remaining = end - now();
+    if (attempt + 1 < attempts && remaining > 0) await wait(Math.min(intervalMs, remaining));
+  }
+  throw new Error(`Registry propagation timed out waiting for ${name}@${version}${tags.length ? ` and tags ${tags.join(', ')}` : ''}; release verification cannot proceed.`);
 }
 
 async function verify(archiveFile, version, sha, preflight) {
@@ -102,10 +135,15 @@ async function verify(archiveFile, version, sha, preflight) {
 
 if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
   const [archive, version, sha, mode] = process.argv.slice(2);
-  assert(!mode || mode === '--preflight');
-  const exists = await verify(archive, version, sha, mode === '--preflight');
-  if (mode === '--preflight') {
-    assert(process.env.GITHUB_OUTPUT, 'Preflight output requires the workflow output file');
-    await appendFile(process.env.GITHUB_OUTPUT, `exists=${exists}\n`);
+  assert(!mode || ['--preflight', '--wait-visible'].includes(mode));
+  if (mode === '--wait-visible') {
+    await waitForRegistry(version);
+    console.log('Expected registry version is visible; artifact and provenance verification must still pass.');
+  } else {
+    const exists = await verify(archive, version, sha, mode === '--preflight');
+    if (mode === '--preflight') {
+      assert(process.env.GITHUB_OUTPUT, 'Preflight output requires the workflow output file');
+      await appendFile(process.env.GITHUB_OUTPUT, `exists=${exists}\n`);
+    }
   }
 }
