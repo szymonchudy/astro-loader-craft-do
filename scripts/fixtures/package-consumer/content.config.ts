@@ -3,6 +3,7 @@ import { z } from 'astro/zod';
 import { craftCollection, type CraftCollectionOptions, type CraftRenderers } from 'astro-loader-craft-do';
 import type { Loader } from 'astro/loaders';
 import { readFileSync } from 'node:fs';
+import assert from 'node:assert/strict';
 import fixtureBody from './fixture-body.txt?raw';
 import { blogRenderers } from './blog-renderers.mjs';
 
@@ -27,7 +28,9 @@ let body = import.meta.env.PACKAGE_FRONTMATTER === 'enabled'
 const native = import.meta.env.PACKAGE_NATIVE === 'enabled';
 const lines = import.meta.env.PACKAGE_LINES === 'enabled';
 const nativeLine = { id: 'separator', type: 'line', markdown: '*****', lineStyle: 'strong', separatorStyle: 'doodle' };
-const source = 'https://r.craft.do/synthetic?signature=temporary';
+const source = import.meta.env.PACKAGE_UNSPLASH === 'enabled'
+  ? 'https://images.unsplash.com/photo-synthetic?auto=format&fit=crop&w=640&q=80'
+  : 'https://r.craft.do/synthetic?signature=temporary';
 const nativeBlock = { id: 'native', type: 'image', url: source, altText: 'Native *literal* _word_ `code` &copy; image', markdown: `![Native alt](${source})` };
 const nativeCaption = { id: 'caption', type: 'text', textStyle: 'caption', markdown: '<caption>Native **rich** [credit](https://example.com/credit).</caption>' };
 if (native) body = body.replace(/\n  <\/content>\n<\/collectionItem>/, `\n\n    ${nativeBlock.markdown}\n\n    ${nativeCaption.markdown}\n  </content>\n</collectionItem>`);
@@ -37,7 +40,12 @@ if (lines) body = body.replace(/\n  <\/content>\n<\/collectionItem>/, `\n\n    $
 const saved = globalThis.fetch;
 globalThis.fetch = async (input, init) => {
   const url = new URL(String(input));
-  if (url.hostname === 'r.craft.do') return new Response(new Uint8Array(readFileSync(new URL('./native.png', import.meta.url))));
+  if (url.hostname === 'r.craft.do' || url.hostname === 'images.unsplash.com') {
+    assert.equal(url.href, source);
+    assert.equal(new Headers(init?.headers).has('Authorization'), false);
+    assert.equal(init?.redirect, 'error');
+    return new Response(new Uint8Array(readFileSync(new URL('./native.png', import.meta.url))));
+  }
   if (url.pathname.endsWith('/items')) return Response.json({ items: import.meta.env.PACKAGE_EMPTY === 'enabled' ? [] : [{ id: 'synthetic-item', title, properties }] });
   return new Headers(init?.headers).get('Accept') === 'application/json'
     ? Response.json({ id: 'synthetic-item', type: 'collectionItem', content: [...(native ? [nativeBlock, nativeCaption] : []), ...(lines ? [nativeLine] : [])] }) : new Response(body);

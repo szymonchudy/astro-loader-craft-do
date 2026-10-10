@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.0-alpha.2 (release candidate)
+
+- Accept the observed `https://images.unsplash.com` origin for images inserted through Craft's built-in Unsplash picker. Preserve query parameters, adjacent rich captions and exact downloaded bytes.
+- Keep the exact-host allowlist, HTTPS requirement, credential/custom-port rejection, disabled redirects and existing resource limits. No public configuration or renderer changes.
+
 ## 0.1.0-alpha.1 (release candidate)
 
 - Reject inconsistent empty or metadata-only Markdown for each structured root continuation before consumer callbacks.

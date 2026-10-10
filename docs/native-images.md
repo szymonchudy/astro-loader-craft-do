@@ -24,8 +24,13 @@ the same root cursors. Duplicate IDs, repeated cursors, inconsistent roots,
 truncated wrappers and unmatched native images fail the load. Complete inline
 nested content is traversed in memory instead of fetched repeatedly.
 
-Media requests have no authorization header. Only observed HTTPS Craft media
-origins are accepted, with redirects disabled and a timeout. A complete supported
+Media requests have no authorization header. Only observed HTTPS media origins
+are accepted: `r.craft.do`, `res.craft.do`, `res.luki.io`, and
+`images.unsplash.com`. The latter was observed for an image inserted through
+Craft's built-in Unsplash picker and is supported starting in `0.1.0-alpha.2`.
+Query parameters are preserved. This is an exact-host allowlist; other hosts,
+subdomains, URL credentials and custom ports are rejected. Redirects remain
+disabled and requests have a timeout. A complete supported
 JPEG/PNG/WebP/AVIF/GIF raster decode must succeed. Files keep the downloaded bytes,
 use a SHA-256 filename, and deduplicate identical content. Craft may re-encode an
 upload before the loader sees it; the loader does not re-encode the download.

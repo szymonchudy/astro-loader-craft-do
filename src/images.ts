@@ -34,7 +34,7 @@ export async function localizeImages(root: CraftBlock, cache: URL, request: type
     if (existing) return existing;
     let url: URL;
     try { url = new URL(source); } catch { throw new Error('Craft returned an invalid image URL.'); }
-    if (url.protocol !== 'https:' || url.username || url.password || url.port || !['r.craft.do', 'res.craft.do', 'res.luki.io'].includes(url.hostname)) throw new Error('Craft image URL uses an unsupported media origin.');
+    if (url.protocol !== 'https:' || url.username || url.password || url.port || !['r.craft.do', 'res.craft.do', 'res.luki.io', 'images.unsplash.com'].includes(url.hostname)) throw new Error('Craft image URL uses an unsupported media origin.');
     const time = deadline(limits.mediaMs, parent);
     try {
       const bytes = await requestBytes(url, request, {

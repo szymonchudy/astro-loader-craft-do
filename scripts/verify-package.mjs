@@ -166,12 +166,15 @@ for (const version of versions) {
   const cli = join(root, 'node_modules/astro', astroPackage.bin.astro);
   const build = (extra = {}, success = true) => run(process.execPath, [cli, 'build'], root, extra, success);
   const html = () => readFileSync(join(root, 'dist/index.html'), 'utf8');
-  await build({ PACKAGE_NATIVE: 'enabled' });
-  assert.match(html(), /alt="Native \*literal\* _word_ `code` &amp;copy; image"/);
-  assert.match(html(), /Native <strong>rich<\/strong>/);
-  assert.match(html(), /src="\/_astro\//);
-  assert.doesNotMatch(html(), /r\.craft\.do|signature=|__ASTRO_IMAGE_/);
-  assert.equal((html().match(/<figure data-craft-image/g) ?? []).length, 1);
+  for (const unsplash of ['', 'enabled']) {
+    await build({ PACKAGE_NATIVE: 'enabled', PACKAGE_UNSPLASH: unsplash });
+    assert.match(html(), /alt="Native \*literal\* _word_ `code` &amp;copy; image"/);
+    assert.match(html(), /Native <strong>rich<\/strong>/);
+    assert.match(html(), /href="https:\/\/example.com\/credit"/);
+    assert.match(html(), /src="\/_astro\//);
+    assert.doesNotMatch(html(), /r\.craft\.do|images\.unsplash\.com|signature=|__ASTRO_IMAGE_/);
+    assert.equal((html().match(/<figure data-craft-image/g) ?? []).length, 1);
+  }
   await build();
   assertDefault(html());
   await run(process.execPath, [cli, 'check'], root);

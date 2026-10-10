@@ -1,6 +1,30 @@
 # Project status
 
-Updated: 2026-10-09
+Updated: 2026-10-10
+
+## Unsplash corrective alpha candidate
+
+Candidate `0.1.0-alpha.2` fixes native images inserted through Craft's built-in
+Unsplash picker. The observed `images.unsplash.com` host was missing from the
+media allowlist, so alpha.1 rejected these images before making a download.
+Only that exact HTTPS host is added. Query parameters, adjacent rich captions,
+original bytes, image metadata and renderer behavior are preserved. Credentials,
+custom ports, other hosts and redirects remain rejected; deadlines, retries and
+resource limits are unchanged. No consumer configuration is added.
+
+The minimal 64-pixel reproduction and an actual-loader regression both failed
+with the reported unsupported-origin error before the fix and pass afterward.
+Eight unsupported URL variants preserve a previously successful snapshot and
+its cached assets without making a media request. All 98 tests and type checking
+pass on Node 24.21.0. The packed-consumer fixture now checks both the existing
+Craft origin and Unsplash, including local asset rendering and rich captions.
+The fresh alpha.2 archive contains the 19 intended files; prepack rebuilds it.
+The clean Astro 7.3.3 consumer passes both image variants, schema/type checks,
+default/custom rendering and the existing blog's Sätteri 0.4.1 renderer.
+Linux Node 24/26 validation across all six peers and publication remain release
+coordinator steps. No Craft content was changed by this correction.
+
+The checkpoints below retain earlier implementation and release evidence.
 
 ## Production-readiness alpha candidate
 

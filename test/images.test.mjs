@@ -12,13 +12,16 @@ async function fixture(renderers = {}) {
  let fail;
  let raster=bytes;
  let alt='Native [alt] <text>';
+ const mediaRequests=[];
  const image=()=>({id:'image',type:'image',url:source,altText:alt,markdown:`![remote](${source})`});
  const caption={id:'caption',type:'text',textStyle:'caption',markdown:'<caption>**Rich** [credit](https://example.com).</caption>'};
  const entries=new Map([['old',{id:'old'}]]);
  const request=async(input,init)=>{
   const url=new URL(String(input));
-  if(url.hostname==='r.craft.do'){
+  if(url.hostname==='r.craft.do'||url.hostname==='images.unsplash.com'){
    assert.equal(init?.headers,undefined);
+   assert.equal(init?.redirect,'error');
+   mediaRequests.push(url.href);
    if(fail==='download')return new Response('',{status:503});
    return new Response(fail==='corrupt'?raster.subarray(0,60):raster);
   }
@@ -31,8 +34,41 @@ async function fixture(renderers = {}) {
  const state={config:{root,cacheDir:new URL('cache/',root)},store:{entries:()=>[...entries],clear(){entries.clear()},set(e){entries.set(e.id,e)}},
   parseData:async({data,filePath})=>{assert.ok(filePath.startsWith(root.pathname));if(fail==='schema')throw Error('schema');return data},
   renderMarkdown:async body=>{if(fail==='render')throw Error('render');return {html:body,metadata:{imagePaths:[]}}},generateDigest:JSON.stringify,logger:{info(){}}};
- return {loader,state,entries,root,setFail(value){fail=value},replace(value){raster=value},refresh(){source='https://r.craft.do/asset?signature=second';alt='Updated alt'}};
+ return {loader,state,entries,root,mediaRequests,setSource(value){source=value},setFail(value){fail=value},replace(value){raster=value},refresh(){source='https://r.craft.do/asset?signature=second';alt='Updated alt'}};
 }
+test('Craft native Unsplash image preserves query parameters, rich caption and exact bytes without credentials',async()=>{
+ const f=await fixture();
+ const source='https://images.unsplash.com/photo-synthetic?auto=format&fit=crop&w=640&q=80';
+ f.setSource(source);await f.loader.load(f.state);
+ const entry=f.entries.get('post');const image=entry.data.images[0];
+ assert.deepEqual(f.mediaRequests,[source]);
+ assert.equal(image.isFirstBlock,true);assert.equal(image.altText,'Native [alt] <text>');
+ assert.equal(image.captionMarkdown,'**Rich** [credit](https://example.com).');
+ assert.match(entry.body,/<figure data-craft-image="image">/);
+ assert.match(entry.body,/<figcaption>\n\n\*\*Rich\*\* \[credit\]\(https:\/\/example.com\)\.\n\n<\/figcaption>/);
+ assert.deepEqual(await readFile(new URL(image.src,new URL('craft-images/',f.state.config.cacheDir))),bytes);
+});
+test('unsupported image origins preserve the previous loader snapshot and cached assets without a media request',async()=>{
+ const f=await fixture();await f.loader.load(f.state);
+ const previous=f.entries.get('post');const cache=new URL('craft-images/',f.state.config.cacheDir);
+ const files=await readdir(cache);const requests=[...f.mediaRequests];
+ for(const source of [
+  'http://images.unsplash.com/photo-synthetic',
+  'https://user:password@images.unsplash.com/photo-synthetic',
+  'https://images.unsplash.com:8443/photo-synthetic',
+  'https://images.unsplash.com.example.com/photo-synthetic',
+  'https://sub.images.unsplash.com/photo-synthetic',
+  'https://images-unsplash.com/photo-synthetic',
+  'https://plus.unsplash.com/photo-synthetic',
+  'https://example.com/photo-synthetic',
+ ]){
+  f.setSource(source);
+  await assert.rejects(f.loader.load(f.state),/Craft image URL uses an unsupported media origin\./);
+  assert.equal(f.entries.get('post'),previous);assert.equal(f.entries.size,1);
+  assert.deepEqual(f.mediaRequests,requests);assert.deepEqual(await readdir(cache),files);
+  assert.deepEqual(await readFile(new URL(previous.data.images[0].src,cache)),bytes);
+ }
+});
 test('native metadata, rich captions, bytes, signed URL refresh and code literals',async()=>{
  const f=await fixture();await f.loader.load(f.state);const first=f.entries.get('post');
  assert.equal(first.data.images.length,1);const image=first.data.images[0];
