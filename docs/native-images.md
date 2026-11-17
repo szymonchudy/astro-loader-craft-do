@@ -42,7 +42,9 @@ bytes, frames, pixels, entries, blocks, pagination and whole-sync duration; see
 [the bounded-sync policy](decisions/009-bounded-complete-sync.md).
 Retries use the current sync's media URL and never fall back to older image bytes.
 Each sync refreshes the source rather than trusting an expired URL or an old
-cached response. Changes to bytes, alt text or captions affect the entry digest.
+cached response.
+The exception is development reuse of an unchanged item, whose stored entry
+keeps its existing assets; see [faster sync](decisions/010-faster-sync.md). Changes to bytes, alt text or captions affect the entry digest.
 
 The next complete parsed/rendered Collection snapshot is staged before replacing
 Astro's store. Download, decode, schema, renderer or Markdown failures preserve

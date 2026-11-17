@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.0-alpha.3
+
+- Load up to four Collection items concurrently; entry order, staged snapshots, limits and retries are unchanged.
+- During `astro dev`, reuse entries whose Craft source and renderer source are unchanged, skipping Markdown, media, parsing and rendering. Builds always process every item. See [decision 010](docs/decisions/010-faster-sync.md).
+
 ## 0.1.0-alpha.2 (release candidate)
 
 - Accept the observed `https://images.unsplash.com` origin for images inserted through Craft's built-in Unsplash picker. Preserve query parameters, adjacent rich captions and exact downloaded bytes.

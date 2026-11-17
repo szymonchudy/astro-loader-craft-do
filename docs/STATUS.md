@@ -1,6 +1,16 @@
 # Project status
 
-Updated: 2026-10-10
+Updated: 2026-11-17
+
+## Faster sync alpha
+
+`0.1.0-alpha.3` loads up to four items concurrently and, during `astro dev` only,
+reuses entries whose raw Craft responses, listed metadata and renderer source are
+unchanged. See [faster sync](decisions/010-faster-sync.md). No public API change.
+All 111 tests, type checking and the six-peer packed matrix with the blog renderer
+pass on Node 24.21.0. On the 18-item blog, `astro sync` fell from 27.9s to 17.0s
+and a warm dev start reused every item in 7.3s; all 18 articles rendered from
+reused entries. A real Craft edit picked up by dev reuse is not yet observed live.
 
 ## Unsplash corrective alpha candidate
 

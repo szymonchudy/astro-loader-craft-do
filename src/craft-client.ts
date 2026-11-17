@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { checkLimit, limits, type SyncBudget } from './budget.js';
 import { requestBytes } from './transport.js';
 /** Internal transport configuration; the library does not load environment files. */
@@ -149,6 +150,8 @@ export function createCraftClient(connection: CraftConnection, request: typeof f
   // Expectations belong to the exact root request cursor, not independent
   // JSON/Markdown page counts. Descendants are expanded before deriving them.
   const itemPages = new Map<string, { cursor: string | undefined; hasContent: boolean }[]>();
+  // Digest of every raw blocks response per item, including fields the parser drops.
+  const itemSources = new Map<string, string>();
   function hasContent(children: CraftBlock[]): boolean {
     return children.some(child => Boolean(child.markdown?.trim() || child.url ||
       !['text', 'page', 'card'].includes(child.type)) || hasContent(child.content ?? []));
@@ -201,6 +204,7 @@ export function createCraftClient(connection: CraftConnection, request: typeof f
     async getItemBlocks(itemId: string): Promise<CraftBlock> {
       requireId(itemId);
       const active = new Set<string>();
+      const source = createHash('sha256');
       async function complete(id: string, depth = 0): Promise<CraftBlock> {
         if (active.has(id) || depth > 64) throw new Error('Craft returned cyclic or excessively nested blocks.');
         active.add(id);
@@ -211,6 +215,7 @@ export function createCraftClient(connection: CraftConnection, request: typeof f
         do {
           const query = new URLSearchParams({ id, maxDepth: '-1', ...(cursor ? { cursor } : {}) });
           const response = await read(`blocks?${query}`, 'application/json', 'reading structured item blocks');
+          source.update(response);
           let value: unknown;
           try { value = JSON.parse(response); } catch { throw new Error('Craft structured blocks response could not be read as JSON.'); }
           const block = parseBlock(value, 0, budget);
@@ -256,7 +261,13 @@ export function createCraftClient(connection: CraftConnection, request: typeof f
         for (const child of block.content ?? []) validate(child);
       }
       validate(root);
+      itemSources.set(itemId, source.digest('hex'));
       return root;
+    },
+
+    /** Raw-response digest from the item's last completed getItemBlocks call. */
+    itemSourceDigest(itemId: string): string | undefined {
+      return itemSources.get(itemId);
     },
 
     async getItemMarkdown(itemId: string): Promise<string> {

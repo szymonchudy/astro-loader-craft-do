@@ -3,7 +3,7 @@ export const limits = Object.freeze({
   entries: 500, blocks: 25_000, continuationPages: 100,
   apiBytes: 8 * 1024 * 1024, markdownBytes: 32 * 1024 * 1024,
   mediaBytes: 32 * 1024 * 1024, frames: 200, pixels: 40_000_000,
-  syncMs: 300_000, apiMs: 20_000, mediaMs: 30_000, attempts: 3,
+  syncMs: 300_000, apiMs: 20_000, mediaMs: 30_000, attempts: 3, concurrency: 4,
 });
 export class LimitError extends Error {}
 export function checkLimit(value: number, maximum: number, label: string): void {
